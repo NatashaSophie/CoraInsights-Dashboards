@@ -43,10 +43,34 @@ export function AuthProvider({ children }) {
 
       const data = await response.json();
       
+      // Mapear userType de string para número
+      const mapUserTypeToId = (userTypeValue) => {
+        // Se já é um número, retornar direto
+        if (typeof userTypeValue === 'number') {
+          return userTypeValue;
+        }
+        
+        // Se é string, mapear para número
+        if (typeof userTypeValue === 'string') {
+          const typeMap = {
+            'pilgrim': 1,
+            'peregrino': 1,
+            'manager': 2,
+            'gestor': 2,
+            'merchant': 3,
+            'comerciante': 3
+          };
+          return typeMap[userTypeValue.toLowerCase()] || 1;
+        }
+        
+        // Fallback: retornar 1 (Peregrino)
+        return 1;
+      };
+
       // Extrair informações do usuário
       const userData = {
         username: data.user.email || data.user.username,
-        type: data.user.userType || 'user',
+        userType: mapUserTypeToId(data.user.userType), // Mapear para número
         name: data.user.username || data.user.email,
         id: data.user.id,
         jwt: data.jwt
