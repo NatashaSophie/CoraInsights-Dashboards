@@ -5,7 +5,7 @@
 }
 
 .header {
-  background: #fff;
+  background: white;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   position: sticky;
   top: 0;
@@ -26,13 +26,21 @@
 }
 
 .logo {
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+}
+
+.logo h1 {
   font-size: 24px;
   font-weight: 700;
-  color: #333;
+  color: #8b6f47;
+  margin: 0;
 }
 
 .nav {
   display: flex;
+  align-items: center;
   gap: 24px;
 }
 
@@ -48,6 +56,23 @@
 .nav-link:hover {
   background: #f0f0f0;
   color: #333;
+}
+
+.nav-user {
+  color: #8b6f47;
+  font-weight: 500;
+}
+
+.nav-logout {
+  background-color: #8b6f47;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
 }
 
 .main {

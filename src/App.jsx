@@ -1,30 +1,45 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Home from './pages/Home';
+import Login from './pages/Login';
 import PublicDashboard from './pages/PublicDashboard';
+import DashboardPeregrino from './pages/DashboardPeregrino';
+import DashboardGestor from './pages/DashboardGestor';
+import DashboardComerciant from './pages/DashboardComerciant';
 import './App.css';
 
-function App() {
+function AppContent() {
+  const { user, logout } = useAuth();
+
   return (
     <Router>
       <div className="app">
         <header className="header">
           <div className="container">
-            <h1 className="logo">Caminho de Cora - Dashboards</h1>
+            <Link to="/" className="logo">
+              <h1>Caminho de Cora - Dashboards</h1>
+            </Link>
             <nav className="nav">
-              <Link to="/" className="nav-link">Público</Link>
-              <Link to="/peregrinos" className="nav-link">Peregrinos</Link>
-              <Link to="/gestores" className="nav-link">Gestores</Link>
-              <Link to="/comerciantes" className="nav-link">Comerciantes</Link>
+              <Link to="/" className="nav-link">Home</Link>
+              {!user ? (
+                <Link to="/login" className="nav-link">Login</Link>
+              ) : (
+                <>
+                  <span className="nav-user">👤 {user.name}</span>
+                  <button onClick={logout} className="nav-logout">Sair</button>
+                </>
+              )}
             </nav>
           </div>
         </header>
         
         <main className="main">
           <Routes>
-            <Route path="/" element={<PublicDashboard />} />
-            <Route path="/peregrinos" element={<div className="container" style={{padding: '40px'}}><h2>Dashboard de Peregrinos</h2><p>Em desenvolvimento...</p></div>} />
-            <Route path="/gestores" element={<div className="container" style={{padding: '40px'}}><h2>Dashboard de Gestores</h2><p>Em desenvolvimento...</p></div>} />
-            <Route path="/comerciantes" element={<div className="container" style={{padding: '40px'}}><h2>Dashboard de Comerciantes</h2><p>Em desenvolvimento...</p></div>} />
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
+            <Route path="/dashboard" element={user ? <UserDashboard /> : <Navigate to="/login" />} />
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>
         
@@ -35,6 +50,33 @@ function App() {
         </footer>
       </div>
     </Router>
+  );
+}
+
+function UserDashboard() {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
+
+  switch (user.role) {
+    case 'pilgrim':
+      return <DashboardPeregrino />;
+    case 'manager':
+      return <DashboardGestor />;
+    case 'merchant':
+      return <DashboardComerciant />;
+    default:
+      return <PublicDashboard />;
+  }
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
