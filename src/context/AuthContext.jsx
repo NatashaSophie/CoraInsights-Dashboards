@@ -46,7 +46,7 @@ export function AuthProvider({ children }) {
       // Extrair informações do usuário
       const userData = {
         username: data.user.email || data.user.username,
-        role: data.user.role?.type || 'user',
+        type: data.user.userType || 'user',
         name: data.user.username || data.user.email,
         id: data.user.id,
         jwt: data.jwt

@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -176,6 +177,7 @@ const gradients = {
 };
 
 function PublicDashboard() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
@@ -346,6 +348,66 @@ function PublicDashboard() {
   return (
     <div style={styles.page}>
       <style>{String.raw`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      
+      {/* Top Navigation Bar - White with shadow */}
+      <nav style={{
+        background: 'white',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+        padding: '16px 40px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000,
+        marginBottom: '8px'
+      }}>
+        <div style={{
+          fontSize: '18px',
+          fontWeight: '600',
+          color: '#3e2723',
+          cursor: 'pointer',
+          letterSpacing: '0.5px'
+        }} onClick={() => navigate('/')}>
+          Caminho de Cora - Dashboards
+        </div>
+        <div style={{ display: 'flex', gap: '32px' }}>
+          <button
+            onClick={() => navigate('/')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#6d4c41',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              padding: '8px 12px',
+              transition: 'color 0.3s ease'
+            }}
+            onMouseEnter={(e) => e.target.style.color = '#4e342e'}
+            onMouseLeave={(e) => e.target.style.color = '#6d4c41'}
+          >
+            Home
+          </button>
+          <button
+            onClick={() => navigate('/login')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#6d4c41',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              padding: '8px 12px',
+              transition: 'color 0.3s ease'
+            }}
+            onMouseEnter={(e) => e.target.style.color = '#4e342e'}
+            onMouseLeave={(e) => e.target.style.color = '#6d4c41'}
+          >
+            Login
+          </button>
+        </div>
+      </nav>
       
       <header style={styles.header}>
         <div style={styles.headerContent}>
