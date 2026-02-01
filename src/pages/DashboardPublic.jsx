@@ -176,7 +176,7 @@ const gradients = {
   sienna: 'linear-gradient(135deg, #8d6e63 0%, #a1887f 100%)'
 };
 
-function PublicDashboard() {
+function DashboardPublic() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -633,4 +633,4 @@ function PublicDashboard() {
   );
 }
 
-export default PublicDashboard;
+export default DashboardPublic;

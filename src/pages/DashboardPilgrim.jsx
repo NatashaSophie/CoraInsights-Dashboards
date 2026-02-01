@@ -1,9 +1,9 @@
 import React from 'react';
 import { AuthenticatedNavigation } from '../components/Navigation/AuthenticatedNavigation';
 import { DashboardLayout } from '../components/Layout/DashboardLayout';
-import './PeregrinoPage.css';
+import './DashboardPilgrim.css';
 
-export function PeregrinoPage() {
+export function DashboardPilgrim() {
   return (
     <>
       <AuthenticatedNavigation />

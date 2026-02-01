@@ -1,10 +1,10 @@
 import React from 'react';
-import PublicDashboard from './PublicDashboard';
+import { DashboardPublic } from './DashboardPublic';
 
 function Home() {
   return (
     <div>
-      <PublicDashboard />
+      <DashboardPublic />
     </div>
   );
 }

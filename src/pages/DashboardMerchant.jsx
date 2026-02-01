@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { AuthenticatedNavigation } from '../components/Navigation/AuthenticatedNavigation';
 import { DashboardLayout } from '../components/Layout/DashboardLayout';
-import './ComerciandatePage.css';
+import './DashboardMerchant.css';
 
-export function ComerciandatePage() {
+export function DashboardMerchant() {
   const [approvalStatus] = useState('pending'); // 'pending', 'approved', 'rejected'
 
   return (

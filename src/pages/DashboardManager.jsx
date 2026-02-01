@@ -1,9 +1,9 @@
 import React from 'react';
 import { AuthenticatedNavigation } from '../components/Navigation/AuthenticatedNavigation';
 import { DashboardLayout } from '../components/Layout/DashboardLayout';
-import './GestorPage.css';
+import './DashboardManager.css';
 
-export function GestorPage() {
+export function DashboardManager() {
   return (
     <>
       <AuthenticatedNavigation />
