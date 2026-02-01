@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
 
   const login = async (identifier, password) => {
     try {
-      const response = await fetch(`${API_URL}/api/auth/local`, {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
