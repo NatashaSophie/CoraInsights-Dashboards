@@ -117,5 +117,3 @@ export function usePilgrimDashboard(startDate = null, endDate = null) {
     debugInfo
   };
 }
-  };
-}
