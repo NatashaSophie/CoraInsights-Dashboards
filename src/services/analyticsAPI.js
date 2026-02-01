@@ -17,7 +17,7 @@ function formatDateForAPI(date) {
  */
 export async function fetchPilgrimAnalytics(startDate = null, endDate = null) {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('jwt');
     if (!token) {
       throw new Error('Token não encontrado. Faça login novamente.');
     }
@@ -51,7 +51,7 @@ export async function fetchPilgrimAnalytics(startDate = null, endDate = null) {
  */
 export async function fetchManagerAnalytics(startDate = null, endDate = null) {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('jwt');
     if (!token) {
       throw new Error('Token não encontrado. Faça login novamente.');
     }
@@ -85,7 +85,7 @@ export async function fetchManagerAnalytics(startDate = null, endDate = null) {
  */
 export async function fetchMerchantAnalytics(merchantId, startDate = null, endDate = null) {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('jwt');
     if (!token) {
       throw new Error('Token não encontrado. Faça login novamente.');
     }
