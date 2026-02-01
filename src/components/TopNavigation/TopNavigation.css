@@ -1,0 +1,137 @@
+/* Top Navigation Bar Styles */
+
+.top-navigation {
+  display: flex;
+  /*align-items: center;*/
+  justify-content: space-between;
+  background: linear-gradient(135deg, #5d4037 0%, #6d4c41 50%, #795548 100%);
+  padding: 16px 40px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  min-height: 70px;
+}
+
+/* Left Section - Title */
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 0 0 auto;
+}
+
+.nav-logo {
+  font-size: 32px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.nav-title-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.nav-title {
+  color: white;
+  font-size: 28px;
+  font-weight: bold;
+  margin: 0;
+  /*letter-spacing: 0.3px; */
+}
+
+.nav-subtitle {
+  /*color: rgba(255, 255, 255, 0.8);*/
+  font-size: 14px;
+  opacity: 0.9;
+  marginTop: '4px';
+  /*margin: 0;
+  font-weight: 400;*/
+}
+
+/* Right Section - Menu Items */
+.nav-right {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 8px;
+  align-items: center;
+}
+
+.nav-link {
+  background: none;
+  border: none;
+   list-style: none;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.12);
+   list-style: none;
+  color: white;
+}
+
+.nav-link:active {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .top-navigation {
+    padding: 12px 24px;
+  }
+
+  .nav-title {
+    font-size: 16px;
+  }
+
+  .nav-link {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .top-navigation {
+    padding: 12px 16px;
+    min-height: 60px;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .nav-left {
+    gap: 12px;
+    width: 100%;
+  }
+
+  .nav-logo {
+    font-size: 28px;
+  }
+
+  .nav-title {
+    font-size: 14px;
+  }
+
+  .nav-subtitle {
+    font-size: 11px;
+  }
+
+  .nav-right {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 4px;
+  }
+
+  .nav-link {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+}
+

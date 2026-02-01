@@ -1,12 +1,12 @@
 .dashboard-container {
   display: flex;
-  height: 100vh;
+  flex: 1;
   background: #f5f7fa;
+  overflow: hidden;
 }
 
 .dashboard-main {
   flex: 1;
-  margin-left: 280px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -40,8 +40,16 @@
 
 /* Responsivo */
 @media (max-width: 768px) {
+  .dashboard-wrapper {
+    height: auto;
+  }
+
+  .dashboard-container {
+    flex-direction: column;
+  }
+
   .dashboard-main {
-    margin-left: 70px;
+    margin-left: 0;
   }
 
   .page-header {

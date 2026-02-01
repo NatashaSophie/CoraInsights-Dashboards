@@ -8,14 +8,13 @@ export function ComerciandatePage() {
 
   return (
     <>
-      <AuthenticatedNavigation 
-        title="Caminho de Cora" 
-        subtitle="Dashboard do Comerciante"
-      />
+      <AuthenticatedNavigation />
       <DashboardLayout 
         title="🏪 Dashboard Comerciante"
+        subtitle="Gestão de estabelecimento e análise de vendas"
+      >
+        title="🏪 Dashboard Comerciante"
       subtitle="Gestão de seus pontos de venda e vendas"
-    >
       {/* Status Banner */}
       {approvalStatus === 'pending' && (
         <div className="status-banner warning">

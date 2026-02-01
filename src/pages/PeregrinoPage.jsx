@@ -6,14 +6,8 @@ import './PeregrinoPage.css';
 export function PeregrinoPage() {
   return (
     <>
-      <AuthenticatedNavigation 
-        title="Caminho de Cora" 
-        subtitle="Dashboard do Peregrino"
-      />
-      <DashboardLayout 
-        title="🚶 Dashboard Peregrino"
-        subtitle="Acompanhe seu progresso na jornada espiritual"
-      >
+      <AuthenticatedNavigation />
+      <DashboardLayout>
       <div className="dashboard-grid">
         {/* KPI Cards */}
         <section className="kpi-section">

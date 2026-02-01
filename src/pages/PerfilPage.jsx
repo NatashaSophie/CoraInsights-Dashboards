@@ -39,10 +39,7 @@ export function PerfilPage() {
 
   return (
     <>
-      <AuthenticatedNavigation 
-        title="Caminho de Cora" 
-        subtitle="Meu Perfil"
-      />
+      <AuthenticatedNavigation />
       <DashboardLayout 
         title="👤 Meu Perfil"
         subtitle="Gerencie suas informações pessoais"

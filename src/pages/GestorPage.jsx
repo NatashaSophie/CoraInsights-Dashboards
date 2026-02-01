@@ -6,13 +6,11 @@ import './GestorPage.css';
 export function GestorPage() {
   return (
     <>
-      <AuthenticatedNavigation 
-        title="Caminho de Cora" 
-        subtitle="Dashboard do Gestor"
-      />
+      <AuthenticatedNavigation />
       <DashboardLayout 
         title="📊 Dashboard Gestor"
         subtitle="Análises, relatórios e gestão da plataforma"
+      >
       >
       <div className="dashboard-grid">
         {/* KPI Cards */}
