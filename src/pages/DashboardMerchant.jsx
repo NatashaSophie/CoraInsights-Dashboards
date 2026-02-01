@@ -1,20 +1,36 @@
 import React, { useState } from 'react';
 import { AuthenticatedNavigation } from '../components/Navigation/AuthenticatedNavigation';
 import { DashboardLayout } from '../components/Layout/DashboardLayout';
+import { useMerchantDashboard } from '../hooks/useMerchantDashboard';
+import { useAuth } from '../context/AuthContext';
 import './DashboardMerchant.css';
 
 export function DashboardMerchant() {
-  const [approvalStatus] = useState('pending'); // 'pending', 'approved', 'rejected'
+  const { user } = useAuth();
+  // TODO: Obter merchantId do usuário logado ou de um seletor
+  // Por enquanto, usar um merchantId fictício para demonstração
+  const merchantId = user?.merchantId || 1;
+  const [approvalStatus] = useState('approved'); // 'pending', 'approved', 'rejected'
+  
+  const { kpiData, loading, error } = useMerchantDashboard(merchantId);
+
+  if (error && error !== 'Merchant ID é obrigatório') {
+    return (
+      <>
+        <AuthenticatedNavigation />
+        <DashboardLayout>
+          <div className="error-message">
+            <p>Erro ao carregar dados: {error}</p>
+          </div>
+        </DashboardLayout>
+      </>
+    );
+  }
 
   return (
     <>
       <AuthenticatedNavigation />
-      <DashboardLayout 
-        title="🏪 Dashboard Comerciante"
-        subtitle="Gestão de estabelecimento e análise de vendas"
-      >
-        title="🏪 Dashboard Comerciante"
-      subtitle="Gestão de seus pontos de venda e vendas"
+      <DashboardLayout>
       {/* Status Banner */}
       {approvalStatus === 'pending' && (
         <div className="status-banner warning">
@@ -35,38 +51,38 @@ export function DashboardMerchant() {
           <h2>Seus Indicadores</h2>
           <div className="kpi-cards">
             <div className="kpi-card">
-              <div className="kpi-icon">🏪</div>
-              <div className="kpi-content">
-                <p className="kpi-label">Pontos de Venda</p>
-                <p className="kpi-value">3</p>
-                <p className="kpi-subtext">Gerenciados</p>
-              </div>
-            </div>
-
-            <div className="kpi-card">
-              <div className="kpi-icon">💰</div>
-              <div className="kpi-content">
-                <p className="kpi-label">Faturamento Este Mês</p>
-                <p className="kpi-value">R$ 4.250</p>
-                <p className="kpi-subtext">+12% vs mês anterior</p>
-              </div>
-            </div>
-
-            <div className="kpi-card">
               <div className="kpi-icon">👥</div>
               <div className="kpi-content">
-                <p className="kpi-label">Clientes Únicos</p>
-                <p className="kpi-value">842</p>
-                <p className="kpi-subtext">Este mês</p>
+                <p className="kpi-label">Visitantes Total</p>
+                <p className="kpi-value">{loading ? '-' : kpiData?.totalVisitors || 0}</p>
+                <p className="kpi-subtext">Peregrinos visitantes</p>
               </div>
             </div>
 
             <div className="kpi-card">
-              <div className="kpi-icon">⭐</div>
+              <div className="kpi-icon">📈</div>
               <div className="kpi-content">
-                <p className="kpi-label">Avaliação Média</p>
-                <p className="kpi-value">4.7</p>
-                <p className="kpi-subtext">De 5 estrelas</p>
+                <p className="kpi-label">Visitantes Recentes</p>
+                <p className="kpi-value">{loading ? '-' : kpiData?.recentVisitors || 0}</p>
+                <p className="kpi-subtext">Últimos 30 dias</p>
+              </div>
+            </div>
+
+            <div className="kpi-card">
+              <div className="kpi-icon">🕐</div>
+              <div className="kpi-content">
+                <p className="kpi-label">Horário de Pico</p>
+                <p className="kpi-value">{loading ? '-' : `${kpiData?.peakHour || 0}h`}</p>
+                <p className="kpi-subtext">Maior fluxo</p>
+              </div>
+            </div>
+
+            <div className="kpi-card">
+              <div className="kpi-icon">🛍️</div>
+              <div className="kpi-content">
+                <p className="kpi-label">Serviços/Produtos</p>
+                <p className="kpi-value">{loading ? '-' : kpiData?.servicesCount || 0}</p>
+                <p className="kpi-subtext">Cadastrados</p>
               </div>
             </div>
           </div>

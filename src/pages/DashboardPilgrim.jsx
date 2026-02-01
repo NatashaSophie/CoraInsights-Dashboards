@@ -1,9 +1,25 @@
 import React from 'react';
 import { AuthenticatedNavigation } from '../components/Navigation/AuthenticatedNavigation';
 import { DashboardLayout } from '../components/Layout/DashboardLayout';
+import { usePilgrimDashboard } from '../hooks/usePilgrimDashboard';
 import './DashboardPilgrim.css';
 
 export function DashboardPilgrim() {
+  const { kpiData, loading, error } = usePilgrimDashboard();
+
+  if (error) {
+    return (
+      <>
+        <AuthenticatedNavigation />
+        <DashboardLayout>
+          <div className="error-message">
+            <p>Erro ao carregar dados: {error}</p>
+          </div>
+        </DashboardLayout>
+      </>
+    );
+  }
+
   return (
     <>
       <AuthenticatedNavigation />
@@ -17,9 +33,9 @@ export function DashboardPilgrim() {
               <div className="kpi-icon">📍</div>
               <div className="kpi-content">
                 <p className="kpi-label">Trechos Completados</p>
-                <p className="kpi-value">5/13</p>
+                <p className="kpi-value">{loading ? '-' : `${kpiData?.routesCompleted || 0}/${kpiData?.totalRoutes || 13}`}</p>
                 <div className="kpi-progress">
-                  <div className="progress-bar" style={{ width: '38%' }}></div>
+                  <div className="progress-bar" style={{ width: `${kpiData?.completionPercentage || 0}%` }}></div>
                 </div>
               </div>
             </div>
@@ -27,8 +43,8 @@ export function DashboardPilgrim() {
             <div className="kpi-card">
               <div className="kpi-icon">⏱️</div>
               <div className="kpi-content">
-                <p className="kpi-label">Tempo Gasto</p>
-                <p className="kpi-value">45h 30m</p>
+                <p className="kpi-label">Tempo Médio por Trecho</p>
+                <p className="kpi-value">{loading ? '-' : `${kpiData?.avgTimeHours || 0}h`}</p>
                 <p className="kpi-subtext">Desde o início</p>
               </div>
             </div>
@@ -37,7 +53,7 @@ export function DashboardPilgrim() {
               <div className="kpi-icon">📅</div>
               <div className="kpi-content">
                 <p className="kpi-label">Próximo Trecho</p>
-                <p className="kpi-value">Trecho 6</p>
+                <p className="kpi-value">Trecho {(kpiData?.routesCompleted || 0) + 1}</p>
                 <p className="kpi-subtext">A definir</p>
               </div>
             </div>
@@ -45,9 +61,9 @@ export function DashboardPilgrim() {
             <div className="kpi-card">
               <div className="kpi-icon">🏆</div>
               <div className="kpi-content">
-                <p className="kpi-label">Pontos Acumulados</p>
-                <p className="kpi-value">1.250</p>
-                <p className="kpi-subtext">Com comércios parceiros</p>
+                <p className="kpi-label">Conquistas Desbloqueadas</p>
+                <p className="kpi-value">{loading ? '-' : kpiData?.achievements || 0}</p>
+                <p className="kpi-subtext">Badges e certificados</p>
               </div>
             </div>
           </div>

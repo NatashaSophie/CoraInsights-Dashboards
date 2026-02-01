@@ -1,17 +1,29 @@
 import React from 'react';
 import { AuthenticatedNavigation } from '../components/Navigation/AuthenticatedNavigation';
 import { DashboardLayout } from '../components/Layout/DashboardLayout';
+import { useManagerDashboard } from '../hooks/useManagerDashboard';
 import './DashboardManager.css';
 
 export function DashboardManager() {
+  const { kpiData, loading, error } = useManagerDashboard();
+
+  if (error) {
+    return (
+      <>
+        <AuthenticatedNavigation />
+        <DashboardLayout>
+          <div className="error-message">
+            <p>Erro ao carregar dados: {error}</p>
+          </div>
+        </DashboardLayout>
+      </>
+    );
+  }
+
   return (
     <>
       <AuthenticatedNavigation />
-      <DashboardLayout 
-        title="📊 Dashboard Gestor"
-        subtitle="Análises, relatórios e gestão da plataforma"
-      >
-      >
+      <DashboardLayout>
       <div className="dashboard-grid">
         {/* KPI Cards */}
         <section className="kpi-section">
@@ -21,35 +33,35 @@ export function DashboardManager() {
               <div className="kpi-icon">👥</div>
               <div className="kpi-content">
                 <p className="kpi-label">Total de Peregrinos</p>
-                <p className="kpi-value">1.247</p>
-                <p className="kpi-subtext">+42 este mês</p>
+                <p className="kpi-value">{loading ? '-' : kpiData?.totalUsers || 0}</p>
+                <p className="kpi-subtext">Usuários ativos</p>
               </div>
             </div>
 
             <div className="kpi-card">
               <div className="kpi-icon">✅</div>
               <div className="kpi-content">
-                <p className="kpi-label">Jornadas Completas</p>
-                <p className="kpi-value">156</p>
-                <p className="kpi-subtext">12.5% do total</p>
+                <p className="kpi-label">Taxa de Conclusão</p>
+                <p className="kpi-value">{loading ? '-' : `${kpiData?.completionRate || 0}%`}</p>
+                <p className="kpi-subtext">Jornadas completas</p>
               </div>
             </div>
 
             <div className="kpi-card">
               <div className="kpi-icon">⏳</div>
               <div className="kpi-content">
-                <p className="kpi-label">Tempo Médio</p>
-                <p className="kpi-value">128h 45m</p>
-                <p className="kpi-subtext">Por jornada</p>
+                <p className="kpi-label">Trilhas Publicadas</p>
+                <p className="kpi-value">{loading ? '-' : kpiData?.publishedTrails || 0}</p>
+                <p className="kpi-subtext">Total: {loading ? '-' : kpiData?.totalTrails || 0}</p>
               </div>
             </div>
 
             <div className="kpi-card">
               <div className="kpi-icon">🏪</div>
               <div className="kpi-content">
-                <p className="kpi-label">Comerciantes Ativos</p>
-                <p className="kpi-value">42</p>
-                <p className="kpi-subtext">+8 aguardando aprovação</p>
+                <p className="kpi-label">Usuários Ativos</p>
+                <p className="kpi-value">{loading ? '-' : kpiData?.activeUsers || 0}</p>
+                <p className="kpi-subtext">Jornadas em andamento</p>
               </div>
             </div>
           </div>
