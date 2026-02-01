@@ -5,25 +5,48 @@ import { usePilgrimDashboard } from '../hooks/usePilgrimDashboard';
 import './DashboardPilgrim.css';
 
 export function DashboardPilgrim() {
-  const { kpiData, loading, error } = usePilgrimDashboard();
-
-  if (error) {
-    return (
-      <>
-        <AuthenticatedNavigation />
-        <DashboardLayout>
-          <div className="error-message">
-            <p>Erro ao carregar dados: {error}</p>
-          </div>
-        </DashboardLayout>
-      </>
-    );
-  }
+  const { kpiData, loading, error, debugInfo } = usePilgrimDashboard();
 
   return (
     <>
       <AuthenticatedNavigation />
       <DashboardLayout>
+        {/* DEBUG: Mostrar informações de carregamento */}
+        {debugInfo && (
+          <div style={{
+            background: '#f5f5f5',
+            border: '1px solid #ddd',
+            borderRadius: '8px',
+            padding: '16px',
+            marginBottom: '20px',
+            fontSize: '12px',
+            fontFamily: 'monospace',
+            color: '#333'
+          }}>
+            <p><strong>📊 DEBUG - Informações de Carregamento</strong></p>
+            <p>⏰ Timestamp: {debugInfo.timestamp}</p>
+            <p>👤 Usuário: {debugInfo.userInfo?.username || 'Não autenticado'} (ID: {debugInfo.userInfo?.userId || 'N/A'})</p>
+            <p>✅ Campos carregados: {debugInfo.loadedFields.length > 0 ? debugInfo.loadedFields.join(', ') : 'Nenhum'}</p>
+            <p>❌ Campos falhados: {debugInfo.failedFields.length > 0 ? debugInfo.failedFields.join(', ') : 'Nenhum'}</p>
+            {debugInfo.error && <p>🚨 Erro: {debugInfo.error}</p>}
+          </div>
+        )}
+
+        {/* Mensagem de erro (se houver) */}
+        {error && (
+          <div style={{
+            background: '#fff3cd',
+            border: '1px solid #ffc107',
+            borderRadius: '8px',
+            padding: '16px',
+            marginBottom: '20px',
+            color: '#856404'
+          }}>
+            <p><strong>⚠️ Aviso:</strong> Erro ao carregar dados: {error}</p>
+            <p style={{ fontSize: '12px', marginTop: '8px' }}>Os indicadores abaixo estão zerados. Tente recarregar a página.</p>
+          </div>
+        )}
+
       <div className="dashboard-grid">
         {/* KPI Cards */}
         <section className="kpi-section">
