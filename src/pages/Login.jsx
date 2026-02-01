@@ -11,38 +11,35 @@ function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    // Simular delay de requisição
-    setTimeout(() => {
-      const result = login(username, password);
-      if (result.success) {
-        navigate('/dashboard');
-      } else {
-        setError(result.error);
-      }
-      setLoading(false);
-    }, 500);
+    const result = await login(username, password);
+    if (result.success) {
+      navigate('/dashboard');
+    } else {
+      setError(result.error);
+    }
+    setLoading(false);
   };
 
-  const handleDemoLogin = (email) => {
+  const handleDemoLogin = async (email) => {
     setUsername(email);
-    setPassword('senha123');
     setError('');
     setLoading(true);
 
-    setTimeout(() => {
-      const result = login(email, 'senha123');
-      if (result.success) {
-        navigate('/dashboard');
-      } else {
-        setError(result.error);
-      }
-      setLoading(false);
-    }, 500);
+    const result = await login(email, 'senha123');
+    if (result.success) {
+      setUsername('');
+      setPassword('');
+      navigate('/dashboard');
+    } else {
+      setError(result.error);
+      setPassword('');
+    }
+    setLoading(false);
   };
 
   return (

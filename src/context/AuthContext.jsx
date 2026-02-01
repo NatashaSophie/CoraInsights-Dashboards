@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
+const API_URL = 'http://localhost:1337';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -19,28 +20,56 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, []);
 
-  const login = (username, password) => {
-    // Simular login - em produção, seria uma chamada à API
-    // Por agora, usamos credenciais fixas para teste
-    const users = {
-      'peregrino@test.com': { username: 'peregrino@test.com', role: 'pilgrim', name: 'Peregrino Teste' },
-      'gestor@test.com': { username: 'gestor@test.com', role: 'manager', name: 'Gestor Teste' },
-      'comerciante@test.com': { username: 'comerciante@test.com', role: 'merchant', name: 'Comerciante Teste' }
-    };
+  const login = async (identifier, password) => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/local`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          identifier, // pode ser email ou username
+          password
+        })
+      });
 
-    if (users[username] && password === 'senha123') {
-      const userData = users[username];
+      if (!response.ok) {
+        const error = await response.json();
+        return { 
+          success: false, 
+          error: error.message || 'Usuário ou senha inválidos' 
+        };
+      }
+
+      const data = await response.json();
+      
+      // Extrair informações do usuário
+      const userData = {
+        username: data.user.email || data.user.username,
+        role: data.user.role?.type || 'user',
+        name: data.user.username || data.user.email,
+        id: data.user.id,
+        jwt: data.jwt
+      };
+
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
-      return { success: true, user: userData };
-    }
+      localStorage.setItem('jwt', data.jwt);
 
-    return { success: false, error: 'Usuário ou senha inválidos' };
+      return { success: true, user: userData };
+    } catch (error) {
+      console.error('Erro ao fazer login:', error);
+      return { 
+        success: false, 
+        error: error.message || 'Erro ao conectar com o servidor' 
+      };
+    }
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
+    localStorage.removeItem('jwt');
   };
 
   return (
