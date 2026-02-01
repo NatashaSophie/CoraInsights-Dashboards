@@ -3,7 +3,7 @@
  * Consome os endpoints /analytics/* do backend
  */
 
-const API_URL = 'http://localhost:1337/api';
+const API_URL = 'http://localhost:1337/';
 
 /**
  * Formata data para YYYY-MM-DD
@@ -26,7 +26,7 @@ export async function fetchPilgrimAnalytics(startDate = null, endDate = null) {
     const end = endDate ? formatDateForAPI(endDate) : formatDateForAPI(new Date());
     const start = startDate ? formatDateForAPI(startDate) : formatDateForAPI(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
 
-    const response = await fetch(`${API_URL}/analytics/pilgrim?start=${start}&end=${end}`, {
+    const response = await fetch(`${API_URL}analytics/pilgrim?start=${start}&end=${end}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -60,7 +60,7 @@ export async function fetchManagerAnalytics(startDate = null, endDate = null) {
     const end = endDate ? formatDateForAPI(endDate) : formatDateForAPI(new Date());
     const start = startDate ? formatDateForAPI(startDate) : formatDateForAPI(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
 
-    const response = await fetch(`${API_URL}/analytics/manager?start=${start}&end=${end}`, {
+    const response = await fetch(`${API_URL}analytics/manager?start=${start}&end=${end}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -98,7 +98,7 @@ export async function fetchMerchantAnalytics(merchantId, startDate = null, endDa
     const end = endDate ? formatDateForAPI(endDate) : formatDateForAPI(new Date());
     const start = startDate ? formatDateForAPI(startDate) : formatDateForAPI(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
 
-    const response = await fetch(`${API_URL}/analytics/merchant?start=${start}&end=${end}&merchantId=${merchantId}`, {
+    const response = await fetch(`${API_URL}analytics/merchant?start=${start}&end=${end}&merchantId=${merchantId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
