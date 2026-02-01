@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AuthenticatedNavigation } from '../components/AuthenticatedNavigation/AuthenticatedNavigation';
+import { AuthenticatedNavigation } from '../components/Navigation/AuthenticatedNavigation';
 import { DashboardLayout } from '../components/Layout/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
 import './PerfilPage.css';

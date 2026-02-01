@@ -1,5 +1,5 @@
 import React from 'react';
-import { AuthenticatedNavigation } from '../components/AuthenticatedNavigation/AuthenticatedNavigation';
+import { AuthenticatedNavigation } from '../components/Navigation/AuthenticatedNavigation';
 import { DashboardLayout } from '../components/Layout/DashboardLayout';
 import './PeregrinoPage.css';
 

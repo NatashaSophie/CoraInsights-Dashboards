@@ -1,5 +1,5 @@
 import React from 'react';
-import { TopNavigation } from '../TopNavigation/TopNavigation';
+import { TopNavigation } from '../Navigation/TopNavigation';
 import './DashboardLayout.css';
 
 export function DashboardLayout({ children, title, subtitle }) {
