@@ -184,7 +184,7 @@ const gradients = {
   sienna: 'linear-gradient(135deg, #8d6e63 0%, #a1887f 100%)'
 };
 
-function DashboardPublic() {
+function DashboardPublic({ hidePublicNav = false, hidePublicHeader = false }) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -391,75 +391,78 @@ function DashboardPublic() {
     <div style={styles.page}>
       <style>{String.raw`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       
-      {/* Top Navigation Bar - White with shadow */}
-      <nav style={{
-        background: 'white',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-        padding: '16px 40px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        position: 'sticky',
-        top: 0,
-        zIndex: 1000,
-        marginBottom: '8px'
-      }}>
-        <div style={{
-          fontSize: '18px',
-          fontWeight: '600',
-          color: '#3e2723',
-          cursor: 'pointer',
-          letterSpacing: '0.5px'
-        }} onClick={() => navigate('/')}>
-          Caminho de Cora - Dashboards
-        </div>
-        <div style={{ display: 'flex', gap: '32px' }}>
-          <button
-            onClick={() => navigate('/')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#6d4c41',
-              fontSize: '14px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              padding: '8px 12px',
-              transition: 'color 0.3s ease'
-            }}
-            onMouseEnter={(e) => e.target.style.color = '#4e342e'}
-            onMouseLeave={(e) => e.target.style.color = '#6d4c41'}
-          >
-            Home
-          </button>
-          <button
-            onClick={() => navigate('/login')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#6d4c41',
-              fontSize: '14px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              padding: '8px 12px',
-              transition: 'color 0.3s ease'
-            }}
-            onMouseEnter={(e) => e.target.style.color = '#4e342e'}
-            onMouseLeave={(e) => e.target.style.color = '#6d4c41'}
-          >
-            Login
-          </button>
-        </div>
-      </nav>
-      
-      <header style={styles.header}>
-        <div style={styles.headerContent}>
-          <div style={{ ...styles.headerIcon, filter: 'brightness(0) invert(1)' }}>&#128694;</div>
-          <div>
-            <h1 style={styles.headerTitle}>Caminho de Cora</h1>
-            <p style={styles.headerSubtitle}>Dashboard de Estatísticas Públicas</p>
+      {!hidePublicNav && (
+        <nav style={{
+          background: 'white',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+          padding: '16px 40px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          position: 'sticky',
+          top: 0,
+          zIndex: 1000,
+          marginBottom: '8px'
+        }}>
+          <div style={{
+            fontSize: '18px',
+            fontWeight: '600',
+            color: '#3e2723',
+            cursor: 'pointer',
+            letterSpacing: '0.5px'
+          }} onClick={() => navigate('/')}>
+            Caminho de Cora - Dashboards
           </div>
-        </div>
-      </header>
+          <div style={{ display: 'flex', gap: '32px' }}>
+            <button
+              onClick={() => navigate('/')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#6d4c41',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                padding: '8px 12px',
+                transition: 'color 0.3s ease'
+              }}
+              onMouseEnter={(e) => e.target.style.color = '#4e342e'}
+              onMouseLeave={(e) => e.target.style.color = '#6d4c41'}
+            >
+              Home
+            </button>
+            <button
+              onClick={() => navigate('/login')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#6d4c41',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                padding: '8px 12px',
+                transition: 'color 0.3s ease'
+              }}
+              onMouseEnter={(e) => e.target.style.color = '#4e342e'}
+              onMouseLeave={(e) => e.target.style.color = '#6d4c41'}
+            >
+              Login
+            </button>
+          </div>
+        </nav>
+      )}
+      
+      {!hidePublicHeader && (
+        <header style={styles.header}>
+          <div style={styles.headerContent}>
+            <div style={{ ...styles.headerIcon, filter: 'brightness(0) invert(1)' }}>&#128694;</div>
+            <div>
+              <h1 style={styles.headerTitle}>Caminho de Cora</h1>
+              <p style={styles.headerSubtitle}>Dashboard de Estatísticas Públicas</p>
+            </div>
+          </div>
+        </header>
+      )}
 
       <main style={styles.main}>
         <div style={styles.cardsGrid}>

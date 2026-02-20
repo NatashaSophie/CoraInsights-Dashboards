@@ -25,7 +25,7 @@ function AppContent() {
         <Route path="/login" element={!user ? <Login /> : <Navigate to="/peregrino" />} />
 
         {/* Rotas protegidas - Dashboard */}
-        <Route path="/dashboard" element={user ? <DashboardPublic /> : <Navigate to="/login" />} />
+        <Route path="/dashboard" element={user ? <Home /> : <Navigate to="/login" />} />
 
         {/* Rotas protegidas - Peregrino (todos os usuários) */}
         {/* <Route path="/peregrino" element={user ? <DashboardPilgrimTeste /> : <Navigate to="/login" />} /> */}
