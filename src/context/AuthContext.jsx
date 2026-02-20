@@ -22,7 +22,11 @@ export function AuthProvider({ children }) {
 
   const login = async (identifier, password) => {
     try {
-      const response = await fetch(`${API_URL}/api/auth/login`, {
+      // Limpar localStorage antigo para evitar conflitos
+      localStorage.removeItem('jwt');
+      localStorage.removeItem('user');
+
+      const response = await fetch(`${API_URL}/dashboards/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -42,6 +46,12 @@ export function AuthProvider({ children }) {
       }
 
       const data = await response.json();
+      
+      console.log('[AUTH FRONTEND] Login response received:', {
+        jwt: data.jwt ? data.jwt.substring(0, 50) + '...' : 'none',
+        userType: data.user.userType,
+        userId: data.user.id
+      });
       
       // Mapear userType de string para número
       const mapUserTypeToId = (userTypeValue) => {
@@ -79,6 +89,8 @@ export function AuthProvider({ children }) {
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('jwt', data.jwt);
+
+      console.log('[AUTH FRONTEND] Token saved to localStorage');
 
       return { success: true, user: userData };
     } catch (error) {

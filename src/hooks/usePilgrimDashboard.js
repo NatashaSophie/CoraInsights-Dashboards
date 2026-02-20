@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { fetchPilgrimAnalytics } from '../services/analyticsAPI';
 
-export function usePilgrimDashboard(startDate = null, endDate = null) {
+export function usePilgrimDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -20,39 +20,80 @@ export function usePilgrimDashboard(startDate = null, endDate = null) {
         setLoading(true);
         setError(null);
         
-        console.log('[DEBUG] Iniciando loadData...', { user, startDate, endDate });
+        console.log('[PILGRIM-DASHBOARD] ===== INICIANDO CARREGAMENTO =====');
+        console.log('[PILGRIM-DASHBOARD] Usuário:', user);
         
         // Debug: Verificar token
         const token = localStorage.getItem('jwt');
-        console.log('[DEBUG] Token disponível:', !!token);
+        console.log('[PILGRIM-DASHBOARD] Token disponível:', !!token);
+        if (token) {
+          console.log('[PILGRIM-DASHBOARD] Token preview:', token.substring(0, 50) + '...');
+        }
         
-        const result = await fetchPilgrimAnalytics(startDate, endDate);
-        console.log('[DEBUG] Resposta do backend:', result);
+        console.log('[PILGRIM-DASHBOARD] Chamando fetchPilgrimAnalytics...');
+        const result = await fetchPilgrimAnalytics();
+        console.log('[PILGRIM-DASHBOARD] ===== RESPOSTA DO BACKEND =====');
+        console.log('[PILGRIM-DASHBOARD] Resultado completo:', result);
+        console.log('[PILGRIM-DASHBOARD] Tipo:', typeof result);
+        console.log('[PILGRIM-DASHBOARD] É objeto?', result && typeof result === 'object');
         
         // Analisar o que conseguiu carregar
         const loadedFields = [];
         const failedFields = [];
         
-        if (result?.trails) loadedFields.push('trails');
-        else failedFields.push('trails');
+        console.log('[PILGRIM-DASHBOARD] ===== VALIDANDO CAMPOS =====');
         
-        if (result?.routes) loadedFields.push('routes');
-        else failedFields.push('routes');
+        if (result?.trails) {
+          loadedFields.push('trails');
+          console.log('[PILGRIM-DASHBOARD] ✅ trails presente:', result.trails);
+        } else {
+          failedFields.push('trails');
+          console.log('[PILGRIM-DASHBOARD] ❌ trails ausente');
+        }
         
-        if (result?.routeProgress?.length) loadedFields.push('routeProgress');
-        else failedFields.push('routeProgress');
+        if (result?.routes) {
+          loadedFields.push('routes');
+          console.log('[PILGRIM-DASHBOARD] ✅ routes presente:', result.routes);
+        } else {
+          failedFields.push('routes');
+          console.log('[PILGRIM-DASHBOARD] ❌ routes ausente');
+        }
         
-        if (result?.recentActivity?.length) loadedFields.push('recentActivity');
-        else failedFields.push('recentActivity');
+        if (result?.routeProgress?.length) {
+          loadedFields.push('routeProgress');
+          console.log('[PILGRIM-DASHBOARD] ✅ routeProgress presente:', result.routeProgress.length, 'items');
+        } else {
+          failedFields.push('routeProgress');
+          console.log('[PILGRIM-DASHBOARD] ❌ routeProgress ausente ou vazio');
+        }
         
-        if (result?.timeStats) loadedFields.push('timeStats');
-        else failedFields.push('timeStats');
+        if (result?.recentActivity?.length) {
+          loadedFields.push('recentActivity');
+          console.log('[PILGRIM-DASHBOARD] ✅ recentActivity presente:', result.recentActivity.length, 'items');
+        } else {
+          failedFields.push('recentActivity');
+          console.log('[PILGRIM-DASHBOARD] ❌ recentActivity ausente ou vazio');
+        }
         
-        if (result?.achievements?.length) loadedFields.push('achievements');
-        else failedFields.push('achievements');
+        if (result?.timeStats) {
+          loadedFields.push('timeStats');
+          console.log('[PILGRIM-DASHBOARD] ✅ timeStats presente:', result.timeStats);
+        } else {
+          failedFields.push('timeStats');
+          console.log('[PILGRIM-DASHBOARD] ❌ timeStats ausente');
+        }
         
-        console.log('[DEBUG] Campos carregados:', loadedFields);
-        console.log('[DEBUG] Campos falhados:', failedFields);
+        if (result?.achievements?.length) {
+          loadedFields.push('achievements');
+          console.log('[PILGRIM-DASHBOARD] ✅ achievements presente:', result.achievements.length, 'items');
+        } else {
+          failedFields.push('achievements');
+          console.log('[PILGRIM-DASHBOARD] ❌ achievements ausente ou vazio');
+        }
+        
+        console.log('[PILGRIM-DASHBOARD] ===== RESUMO =====');
+        console.log('[PILGRIM-DASHBOARD] Campos carregados:', loadedFields);
+        console.log('[PILGRIM-DASHBOARD] Campos falhados:', failedFields);
         
         setDebugInfo({
           loadedFields,
@@ -67,7 +108,11 @@ export function usePilgrimDashboard(startDate = null, endDate = null) {
         
         setData(result);
       } catch (err) {
-        console.error('[DEBUG] Erro ao carregar dados:', err);
+        console.error('[PILGRIM-DASHBOARD] ===== ERRO AO CARREGAR =====');
+        console.error('[PILGRIM-DASHBOARD] Erro:', err);
+        console.error('[PILGRIM-DASHBOARD] Mensagem:', err.message);
+        console.error('[PILGRIM-DASHBOARD] Stack:', err.stack);
+        
         setError(err.message);
         setDebugInfo({
           loadedFields: [],
@@ -86,7 +131,7 @@ export function usePilgrimDashboard(startDate = null, endDate = null) {
     }
 
     loadData();
-  }, [startDate, endDate, user]);
+  }, [user]);
 
   // Dados formatados para KPIs
   const kpiData = data ? {

@@ -18,7 +18,7 @@ function Login() {
 
     const result = await login(username, password);
     if (result.success) {
-      navigate('/dashboard');
+      navigate('/peregrino');
     } else {
       setError(result.error);
     }
@@ -34,7 +34,7 @@ function Login() {
     if (result.success) {
       setUsername('');
       setPassword('');
-      navigate('/dashboard');
+      navigate('/peregrino');
     } else {
       setError(result.error);
       setPassword('');
@@ -172,7 +172,8 @@ function Login() {
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
-
+        
+        {/*
         <div className="demo-section">
           <p className="demo-title">Contas de demonstração:</p>
           <div className="demo-buttons">
@@ -209,6 +210,8 @@ function Login() {
           </div>
           <p className="demo-note">Senha para todas: <code>senha123</code></p>
         </div>
+        */}  
+
       </div>
     </div>
     </div>

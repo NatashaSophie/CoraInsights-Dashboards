@@ -4,6 +4,9 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import DashboardPublic from './pages/DashboardPublic';
+// import { DashboardPilgrimTeste } from './pages/DashboardPilgrimTeste';
+// import { DashboardManagerTeste } from './pages/DashboardManagerTeste';
+// import { DashboardMerchantTeste } from './pages/DashboardMerchantTeste';
 import { DashboardPilgrim } from './pages/DashboardPilgrim';
 import { DashboardManager } from './pages/DashboardManager';
 import { DashboardMerchant } from './pages/DashboardMerchant';
@@ -25,15 +28,24 @@ function AppContent() {
         <Route path="/dashboard" element={user ? <DashboardPublic /> : <Navigate to="/login" />} />
 
         {/* Rotas protegidas - Peregrino (todos os usuários) */}
+        {/* <Route path="/peregrino" element={user ? <DashboardPilgrimTeste /> : <Navigate to="/login" />} /> */}
         <Route path="/peregrino" element={user ? <DashboardPilgrim /> : <Navigate to="/login" />} />
 
         {/* Rotas protegidas - Gestor */}
+        {/* <Route 
+          path="/gestor" 
+          element={user && user.userType === 2 ? <DashboardManagerTeste /> : <Navigate to="/peregrino" />} 
+        /> */}
         <Route 
           path="/gestor" 
           element={user && user.userType === 2 ? <DashboardManager /> : <Navigate to="/peregrino" />} 
         />
 
         {/* Rotas protegidas - Comerciante */}
+        {/* <Route 
+          path="/comerciante" 
+          element={user && user.userType === 3 ? <DashboardMerchantTeste /> : <Navigate to="/peregrino" />} 
+        /> */}
         <Route 
           path="/comerciante" 
           element={user && user.userType === 3 ? <DashboardMerchant /> : <Navigate to="/peregrino" />} 

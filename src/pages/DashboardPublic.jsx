@@ -142,6 +142,14 @@ const styles = {
     fontSize: '16px'
   },
   badge: { display: 'inline-block', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600' },
+  legend: {
+    marginBottom: '16px',
+    color: '#6d4c41',
+    fontSize: '12px',
+    display: 'flex',
+    gap: '12px',
+    flexWrap: 'wrap'
+  },
   pointsBadge: {
     background: 'linear-gradient(135deg, #5d4037, #6d4c41)',
     color: 'white',
@@ -220,7 +228,7 @@ function DashboardPublic() {
   }
 
   if (!data) {
-    return <div style={styles.loading}>Sem dados disponiveis</div>;
+    return <div style={styles.loading}>Sem dados disponíveis</div>;
   }
 
   const formatMonth = (monthStr) => {
@@ -278,31 +286,65 @@ function DashboardPublic() {
     }))
   };
 
-  const avgTimeByRouteChart = {
-    labels: (data.partsCompletionData || []).map(p => {
-      const name = p.name || 'Trecho ' + p.id;
-      return name.length > 20 ? name.slice(0, 20) + '...' : name;
-    }),
+  const pedestreParts = data.partsCompletionDataPedestre || [];
+  const bicicletaParts = data.partsCompletionDataBicicleta || [];
+
+  const avgTimeByRoutePedestreChart = {
+    labels: pedestreParts.map(p => String(p.id)),
     datasets: [{
       label: 'Tempo Medio (horas)',
-      data: (data.partsCompletionData || []).map(p => p.avgTimeHours || 0),
+      data: pedestreParts.map(p => p.avgTimeHours || 0),
       backgroundColor: '#5d4037',
       borderRadius: 6
     }]
   };
 
-  const partsCompletionChart = {
-    labels: (data.partsCompletionData || []).map(p => {
-      const name = p.name || 'Trecho ' + p.id;
-      return name.length > 25 ? name.slice(0, 25) + '...' : name;
-    }),
+  const avgTimeByRouteBicicletaChart = {
+    labels: bicicletaParts.map(p => String(p.id)),
     datasets: [{
-      label: 'Conclusoes',
-      data: (data.partsCompletionData || []).map(p => p.completions),
+      label: 'Tempo Medio (horas)',
+      data: bicicletaParts.map(p => p.avgTimeHours || 0),
       backgroundColor: '#8d6e63',
       borderRadius: 6
     }]
   };
+
+  const pedestreCountMap = pedestreParts.reduce((acc, part) => {
+    acc[String(part.id)] = part.completions || 0;
+    return acc;
+  }, {});
+  const bicicletaCountMap = bicicletaParts.reduce((acc, part) => {
+    acc[String(part.id)] = part.completions || 0;
+    return acc;
+  }, {});
+
+  const partsCompletionChart = {
+    labels: (data.partsCompletionData || []).map(p => String(p.id)),
+    datasets: [
+      {
+        label: 'Caminhantes',
+        data: (data.partsCompletionData || []).map(p => pedestreCountMap[String(p.id)] || 0),
+        backgroundColor: '#5d4037',
+        borderRadius: 6
+      },
+      {
+        label: 'Ciclistas',
+        data: (data.partsCompletionData || []).map(p => bicicletaCountMap[String(p.id)] || 0),
+        backgroundColor: '#a1887f',
+        borderRadius: 6
+      }
+    ]
+  };
+
+  const partsLegend = (data.partsCompletionData || []).map(p => ({
+    id: p.id,
+    name: p.name || 'Trecho ' + p.id
+  }));
+  const partsNameMap = (data.partsCompletionData || []).reduce((acc, part) => {
+    acc[String(part.id)] = part.name || 'Trecho ' + part.id;
+    return acc;
+  }, {});
+  const getPartName = (id) => partsNameMap[String(id)] || `Trecho ${id}`;
 
   const top5 = (data.topPilgrims || []).slice(0, 5);
   const topPilgrimsChart = {
@@ -414,7 +456,7 @@ function DashboardPublic() {
           <div style={{ ...styles.headerIcon, filter: 'brightness(0) invert(1)' }}>&#128694;</div>
           <div>
             <h1 style={styles.headerTitle}>Caminho de Cora</h1>
-            <p style={styles.headerSubtitle}>Dashboard de Estatisticas Publicas</p>
+            <p style={styles.headerSubtitle}>Dashboard de Estatísticas Públicas</p>
           </div>
         </div>
       </header>
@@ -428,8 +470,8 @@ function DashboardPublic() {
             <div style={styles.statCardSubtitle}>{data.malePilgrims} masc. / {data.femalePilgrims} fem.</div>
           </div>
           <div style={{ ...styles.statCard, background: gradients.brown }}>
-            <div style={{ ...styles.statCardIcon, filter: 'brightness(0) invert(1)', opacity: 0.9 }}>&#9989;</div>
-            <div style={styles.statCardLabel}>Percursos Concluidos</div>
+            <div style={{ ...styles.statCardIcon, filter: 'brightness(0) invert(1)', opacity: 0.9 }}>🛣️</div>
+            <div style={styles.statCardLabel}>Percursos Concluídos</div>
             <div style={styles.statCardValue}>{data.completedTrails}</div>
             <div style={styles.statCardSubtitle}>caminho completo ou parcial</div>
           </div>
@@ -449,14 +491,14 @@ function DashboardPublic() {
 
         <div style={styles.sectionTitle}>
           <span style={styles.sectionIcon}>&#128202;</span>
-          Analises e Estatisticas
+          Análises e Estatísticas
         </div>
 
         <div style={styles.chartsGrid}>
           <div style={styles.chartCard}>
             <div style={styles.chartCardHeader}>
               <h3 style={styles.chartCardTitle}>&#128200; Crescimento Mensal de Cadastros</h3>
-              <p style={styles.chartCardSubtitle}>Novos peregrinos cadastrados por mes</p>
+              <p style={styles.chartCardSubtitle}>Novos peregrinos cadastrados por mês</p>
             </div>
             <div style={styles.chartCardBody}>
               <Line data={monthlyDataChart} options={chartOptions} />
@@ -466,7 +508,7 @@ function DashboardPublic() {
           <div style={styles.chartCard}>
             <div style={styles.chartCardHeader}>
               <h3 style={styles.chartCardTitle}>&#127919; Status do Caminho</h3>
-              <p style={styles.chartCardSubtitle}>Distribuicao por trechos completados</p>
+              <p style={styles.chartCardSubtitle}>Distribuição por trechos completados</p>
             </div>
             <div style={{ ...styles.chartCardBody, display: 'flex', justifyContent: 'center' }}>
               <div style={{ maxWidth: '280px' }}>
@@ -484,8 +526,8 @@ function DashboardPublic() {
 
           <div style={styles.chartCard}>
             <div style={styles.chartCardHeader}>
-              <h3 style={styles.chartCardTitle}>&#128197; Periodo de Maior Incidencia</h3>
-              <p style={styles.chartCardSubtitle}>Percursos concluidos nos ultimos 2 anos (completos vs parciais)</p>
+              <h3 style={styles.chartCardTitle}>&#128197; Período de Maior Incidência</h3>
+              <p style={styles.chartCardSubtitle}>Percursos concluídos (completos e parciais)</p>
             </div>
             <div style={styles.chartCardBody}>
               <Line 
@@ -503,7 +545,7 @@ function DashboardPublic() {
           <div style={styles.chartCard}>
             <div style={styles.chartCardHeader}>
               <h3 style={styles.chartCardTitle}>&#127942; Top 5 Peregrinos</h3>
-              <p style={styles.chartCardSubtitle}>Ranking por pontuacao</p>
+              <p style={styles.chartCardSubtitle}>Ranking por pontuação</p>
             </div>
             <div style={styles.chartCardBody}>
               <Bar data={topPilgrimsChart} options={{ ...chartOptions, indexAxis: 'y' }} />
@@ -511,42 +553,119 @@ function DashboardPublic() {
           </div>
         </div>
 
-        {/* Novo grafico de tempo medio por trecho */}
-        <div style={{ ...styles.chartCard, marginBottom: '32px' }}>
-          <div style={styles.chartCardHeader}>
-            <h3 style={styles.chartCardTitle}>&#9201; Tempo Medio de Conclusao por Trecho</h3>
-            <p style={styles.chartCardSubtitle}>Tempo medio em horas para completar cada um dos 13 trechos</p>
+        <div style={{ ...styles.chartsGrid, marginBottom: '32px' }}>
+          <div style={styles.chartCard}>
+            <div style={styles.chartCardHeader}>
+              <h3 style={styles.chartCardTitle}>&#9201; Tempo Médio (Pedestre)</h3>
+              <p style={styles.chartCardSubtitle}>Tempo médio em horas para completar cada um dos 13 trechos</p>
+            </div>
+            <div style={styles.chartCardBody}>
+              <Bar 
+                data={avgTimeByRoutePedestreChart} 
+                options={{
+                  ...chartOptions,
+                  plugins: {
+                    ...chartOptions.plugins,
+                    tooltip: {
+                      callbacks: {
+                        title: (items) => {
+                          const id = items?.[0]?.label;
+                          return getPartName(id);
+                        }
+                      }
+                    }
+                  },
+                  scales: {
+                    ...chartOptions.scales,
+                    x: { ...chartOptions.scales.x, ticks: { maxRotation: 45, minRotation: 45 } }
+                  }
+                }} 
+              />
+            </div>
           </div>
-          <div style={styles.chartCardBody}>
-            <Bar 
-              data={avgTimeByRouteChart} 
-              options={{
-                ...chartOptions,
-                scales: {
-                  ...chartOptions.scales,
-                  x: { ...chartOptions.scales.x, ticks: { maxRotation: 45, minRotation: 45 } }
-                }
-              }} 
-            />
+          <div style={styles.chartCard}>
+            <div style={styles.chartCardHeader}>
+              <h3 style={styles.chartCardTitle}>&#9201; Tempo Médio (Ciclista)</h3>
+              <p style={styles.chartCardSubtitle}>Tempo médio em horas para completar cada um dos 13 trechos</p>
+            </div>
+            <div style={styles.chartCardBody}>
+              <Bar 
+                data={avgTimeByRouteBicicletaChart} 
+                options={{
+                  ...chartOptions,
+                  plugins: {
+                    ...chartOptions.plugins,
+                    tooltip: {
+                      callbacks: {
+                        title: (items) => {
+                          const id = items?.[0]?.label;
+                          return getPartName(id);
+                        }
+                      }
+                    }
+                  },
+                  scales: {
+                    ...chartOptions.scales,
+                    x: { ...chartOptions.scales.x, ticks: { maxRotation: 45, minRotation: 45 } }
+                  }
+                }} 
+              />
+            </div>
           </div>
         </div>
 
         <div style={{ ...styles.chartCard, marginBottom: '32px' }}>
           <div style={styles.chartCardHeader}>
             <h3 style={styles.chartCardTitle}>&#128506; Trechos do Caminho</h3>
-            <p style={styles.chartCardSubtitle}>Quantidade de conclusoes por trecho</p>
+            <p style={styles.chartCardSubtitle}>Quantidade de conclusões por trecho</p>
           </div>
-          <div style={styles.chartCardBody}>
-            <Bar 
-              data={partsCompletionChart} 
-              options={{
-                ...chartOptions,
-                scales: {
-                  ...chartOptions.scales,
-                  x: { ...chartOptions.scales.x, ticks: { maxRotation: 45, minRotation: 45 } }
-                }
-              }} 
-            />
+          <div style={{ ...styles.chartCardBody, display: 'flex', gap: '24px' }}>
+            <div style={{ flex: 2, minWidth: 0 }}>
+              <Bar 
+                data={partsCompletionChart} 
+                options={{
+                  ...chartOptions,
+                  plugins: {
+                    ...chartOptions.plugins,
+                    tooltip: {
+                      mode: 'index',
+                      intersect: false,
+                      callbacks: {
+                        title: (items) => {
+                          const id = items?.[0]?.label;
+                          return getPartName(id);
+                        },
+                        beforeBody: (items) => {
+                          const id = items?.[0]?.label;
+                          const pedestre = pedestreCountMap[String(id)] || 0;
+                          const bicicleta = bicicletaCountMap[String(id)] || 0;
+                          const total = pedestre + bicicleta;
+                          return `Total: ${total}`;
+                        },
+                        label: (item) => {
+                          return `${item.dataset.label}: ${item.formattedValue}`;
+                        }
+                      }
+                    }
+                  },
+                  scales: {
+                    ...chartOptions.scales,
+                    x: { ...chartOptions.scales.x, stacked: true, ticks: { maxRotation: 0, minRotation: 0 } },
+                    y: { ...chartOptions.scales.y, stacked: true }
+                  }
+                }} 
+              />
+            </div>
+            <div style={{ flex: 1, fontSize: '12px', color: '#6d4c41' }}>
+              <div style={{ fontWeight: '600', marginBottom: '8px' }}>Legenda (ID - Trecho)</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px' }}>
+                {partsLegend.map(item => (
+                  <div key={item.id}>
+                    <strong>{item.id}</strong> - {item.name}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -556,9 +675,13 @@ function DashboardPublic() {
         </div>
         <p style={{ color: '#8d6e63', marginBottom: '20px', fontSize: '13px' }}>
           <span style={{ background: '#efebe9', padding: '6px 12px', borderRadius: '20px' }}>
-            <strong>Pontuacao:</strong> 10 pts/km + 1000 pts (vel. 4-6 km/h) + 500 pts/percurso + 1000 pts (caminho completo)
+            <strong>Pontuacao:</strong> 10 pts/km + 500 pts/percurso + 1000 pts (cada caminho completado)
           </span>
         </p>
+        <div style={styles.legend}>
+          <span style={{ background: '#efebe9', padding: '6px 12px', borderRadius: '20px' }}>
+            <strong>Legenda:</strong> Modalidade: C = Caminhada | B = Bicicleta -- Sexo: M = Masculino | F = Feminino -- Percursos: Percusos Concluídos -- Trechos: Trechos Concluídos</span>
+        </div>
 
         <div style={styles.chartCard}>
           <div style={{ overflowX: 'auto' }}>
@@ -569,12 +692,13 @@ function DashboardPublic() {
                   <th style={styles.th}>Peregrino</th>
                   <th style={{ ...styles.th, textAlign: 'center' }}>Idade</th>
                   <th style={{ ...styles.th, textAlign: 'center' }}>Sexo</th>
+                  <th style={{ ...styles.th, textAlign: 'center' }}>Modalidade</th>
                   <th style={{ ...styles.th, textAlign: 'center' }}>Percursos</th>
                   <th style={{ ...styles.th, textAlign: 'center' }}>Trechos</th>
-                  <th style={{ ...styles.th, textAlign: 'right' }}>Distancia</th>
+                  <th style={{ ...styles.th, textAlign: 'right' }}>Distância</th>
                   <th style={{ ...styles.th, textAlign: 'right' }}>Tempo</th>
-                  <th style={{ ...styles.th, textAlign: 'right' }}>Vel. Media</th>
-                  <th style={{ ...styles.th, textAlign: 'right' }}>Pontuacao</th>
+                  <th style={{ ...styles.th, textAlign: 'right' }}>Vel. média</th>
+                  <th style={{ ...styles.th, textAlign: 'right' }}>Pontuação</th>
                 </tr>
               </thead>
               <tbody>
@@ -599,6 +723,19 @@ function DashboardPublic() {
                       <span style={{ ...styles.badge, background: pilgrim.sex === 'M' ? '#d7ccc8' : pilgrim.sex === 'F' ? '#efebe9' : '#f5f0e8', color: pilgrim.sex === 'M' ? '#5d4037' : pilgrim.sex === 'F' ? '#6d4c41' : '#795548' }}>
                         {pilgrim.sex}
                       </span>
+                    </td>
+                    <td style={{ ...styles.td, textAlign: 'center' }}>
+                      {(() => {
+                        const seq = Array.isArray(pilgrim.modalitySequence) && pilgrim.modalitySequence.length > 0
+                          ? pilgrim.modalitySequence.join(' | ')
+                          : (pilgrim.modality || '-');
+                        const base = seq.includes('B') && !seq.includes('C') ? 'B' : seq.includes('C') && !seq.includes('B') ? 'C' : '-';
+                        return (
+                      <span style={{ ...styles.badge, background: base === 'C' ? '#efebe9' : base === 'B' ? '#d7ccc8' : '#f5f0e8', color: base === 'C' ? '#5d4037' : base === 'B' ? '#4e342e' : '#795548' }}>
+                        {seq}
+                      </span>
+                        );
+                      })()}
                     </td>
                     <td style={{ ...styles.td, textAlign: 'center' }}>
                       <span style={{ ...styles.badge, background: '#efebe9', color: '#5d4037' }}>{pilgrim.trails}</span>

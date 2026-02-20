@@ -455,6 +455,7 @@ function calculateRankingDetalhado(users, trails, trailRoutes) {
     let totalSections = 0;
     let totalTime = 0;
     let completedTrails = 0;
+    let hasFullPath = false;
 
     userTrails.forEach(trail => {
       const routes = trailRoutes.filter(r => r.trail?.id === trail.id);
@@ -464,6 +465,9 @@ function calculateRankingDetalhado(users, trails, trailRoutes) {
       
       if (trail.finishedAt) {
         completedTrails++;
+        if (completedRoutes.length === 13) {
+          hasFullPath = true;
+        }
       }
 
       // Somar distância dos trechos
@@ -482,7 +486,7 @@ function calculateRankingDetalhado(users, trails, trailRoutes) {
     const avgSpeed = totalTimeHours > 0 ? parseFloat((totalDistance / totalTimeHours).toFixed(2)) : 0;
     
     // Calcular pontuação
-    const points = calculatePoints(totalDistance, avgSpeed, completedTrails, userTrails[0]?.modality);
+    const points = calculatePoints(totalDistance, avgSpeed, completedTrails, hasFullPath, userTrails[0]?.modality);
 
     ranking.push({
       rank: 0,
@@ -508,28 +512,24 @@ function calculateRankingDetalhado(users, trails, trailRoutes) {
 
 /**
  * Calcula pontuação do peregrino
- * Pontuação: 10 pts/km + 1000 pts (vel. 4-6) + 500 pts/percurso + (1000 andando | 500 bike)
+ * Pontuacao: 10 pts/km + 500 pts/percurso + 1000 pts (caminho completo)
  */
-function calculatePoints(distance, avgSpeed, completedTrails, modality) {
+function calculatePoints(distance, avgSpeed, completedTrails, hasFullPath, modality) {
   let points = 0;
   
   // 10 pontos por km
   points += distance * 10;
   
-  // 1000 pontos se velocidade média entre 4-6 km/h
-  if (avgSpeed >= 4 && avgSpeed <= 6) {
-    points += 1000;
-  }
-  
   // 500 pontos por percurso concluído
   points += completedTrails * 500;
-  
-  // 1000 se andando, 500 se bike
-  if (modality === 'foot') {
+
+  if (hasFullPath) {
     points += 1000;
-  } else {
-    points += 500;
   }
+  
+  // 1000 pontos por velocidade ideal
+  void avgSpeed;
+  void modality;
   
   return points;
 }

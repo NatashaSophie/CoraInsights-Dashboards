@@ -12,25 +12,56 @@ export function DashboardMerchant() {
   const merchantId = user?.merchantId || 1;
   const [approvalStatus] = useState('approved'); // 'pending', 'approved', 'rejected'
   
-  const { kpiData, loading, error } = useMerchantDashboard(merchantId);
+  const { data, kpiData, loading, error } = useMerchantDashboard(merchantId);
 
-  if (error && error !== 'Merchant ID é obrigatório') {
-    return (
-      <>
-        <AuthenticatedNavigation />
-        <DashboardLayout>
-          <div className="error-message">
-            <p>Erro ao carregar dados: {error}</p>
-          </div>
-        </DashboardLayout>
-      </>
-    );
-  }
+  // Dados fallback quando há erro
+  const fallbackKpiData = {
+    totalVisitors: 0,
+    conversionRate: 0,
+    averageTicket: 0,
+    peakHour: '-'
+  };
+
+  const displayKpiData = error ? fallbackKpiData : kpiData;
 
   return (
     <>
       <AuthenticatedNavigation />
       <DashboardLayout>
+      {/* Debug Info - Para testes */}
+      {error && (
+        <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+          <h3 style={{ marginTop: 0 }}>📊 Debug - Dados Carregados</h3>
+          <details>
+            <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>Expandir / Recolher</summary>
+            <pre style={{ 
+              backgroundColor: '#fff', 
+              padding: '10px', 
+              borderRadius: '4px',
+              overflow: 'auto',
+              fontSize: '12px'
+            }}>
+{`Dados Disponíveis:
+${data ? '✅ Data Object' : '❌ Data Object'}
+${data?.visitors ? '  ✅ Visitors' : '  ❌ Visitors'}
+${data?.activity ? '  ✅ Activity' : '  ❌ Activity'}
+${data?.peakHours ? '  ✅ Peak Hours' : '  ❌ Peak Hours'}
+${data?.services ? '  ✅ Services' : '  ❌ Services'}
+
+Erro: ${error || 'Nenhum erro'}`}
+            </pre>
+          </details>
+        </div>
+      )}
+
+      {/* Mensagem de Erro */}
+      {error && error !== 'Merchant ID é obrigatório' && (
+        <div className="error-message" style={{ marginBottom: '20px' }}>
+          <p>⚠️ Erro ao carregar dados: {error}</p>
+          <p style={{ fontSize: '12px', color: '#666' }}>Os gráficos e dados estão zerados até que o carregamento seja bem-sucedido.</p>
+        </div>
+      )}
+
       {/* Status Banner */}
       {approvalStatus === 'pending' && (
         <div className="status-banner warning">
@@ -54,7 +85,7 @@ export function DashboardMerchant() {
               <div className="kpi-icon">👥</div>
               <div className="kpi-content">
                 <p className="kpi-label">Visitantes Total</p>
-                <p className="kpi-value">{loading ? '-' : kpiData?.totalVisitors || 0}</p>
+                <p className="kpi-value">{loading ? '-' : displayKpiData?.totalVisitors || 0}</p>
                 <p className="kpi-subtext">Peregrinos visitantes</p>
               </div>
             </div>
@@ -63,7 +94,7 @@ export function DashboardMerchant() {
               <div className="kpi-icon">📈</div>
               <div className="kpi-content">
                 <p className="kpi-label">Visitantes Recentes</p>
-                <p className="kpi-value">{loading ? '-' : kpiData?.recentVisitors || 0}</p>
+                <p className="kpi-value">{loading ? '-' : displayKpiData?.recentVisitors || 0}</p>
                 <p className="kpi-subtext">Últimos 30 dias</p>
               </div>
             </div>
@@ -72,7 +103,7 @@ export function DashboardMerchant() {
               <div className="kpi-icon">🕐</div>
               <div className="kpi-content">
                 <p className="kpi-label">Horário de Pico</p>
-                <p className="kpi-value">{loading ? '-' : `${kpiData?.peakHour || 0}h`}</p>
+                <p className="kpi-value">{loading ? '-' : `${displayKpiData?.peakHour || 0}h`}</p>
                 <p className="kpi-subtext">Maior fluxo</p>
               </div>
             </div>
@@ -81,7 +112,7 @@ export function DashboardMerchant() {
               <div className="kpi-icon">🛍️</div>
               <div className="kpi-content">
                 <p className="kpi-label">Serviços/Produtos</p>
-                <p className="kpi-value">{loading ? '-' : kpiData?.servicesCount || 0}</p>
+                <p className="kpi-value">{loading ? '-' : displayKpiData?.servicesCount || 0}</p>
                 <p className="kpi-subtext">Cadastrados</p>
               </div>
             </div>

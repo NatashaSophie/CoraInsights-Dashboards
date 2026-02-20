@@ -4,26 +4,72 @@ import { DashboardLayout } from '../components/Layout/DashboardLayout';
 import { useManagerDashboard } from '../hooks/useManagerDashboard';
 import './DashboardManager.css';
 
-export function DashboardManager() {
-  const { kpiData, loading, error } = useManagerDashboard();
 
-  if (error) {
-    return (
-      <>
-        <AuthenticatedNavigation />
-        <DashboardLayout>
-          <div className="error-message">
-            <p>Erro ao carregar dados: {error}</p>
-          </div>
-        </DashboardLayout>
-      </>
-    );
-  }
+/*
+  TRATAMENTO DE ERROS
+*/
+
+export function DashboardManager() {
+  const { data, kpiData, loading, error } = useManagerDashboard();
+
+  
+  // Dados fallback quando há erro
+  const fallbackKpiData = {
+    totalUsers: 0,
+    totalTrails: 0,
+    publishedTrails: 0,
+    completionRate: 0,
+    activeUsers: 0
+  };
+
+
+  const displayKpiData = error ? fallbackKpiData : kpiData;
 
   return (
     <>
       <AuthenticatedNavigation />
       <DashboardLayout>
+        {/* Debug Info - Para testes */}
+        {error && (
+          <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+            <h3 style={{ marginTop: 0 }}>📊 Debug - Dados Carregados</h3>
+            <details>
+              <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>Expandir / Recolher</summary>
+              <pre style={{ 
+                backgroundColor: '#fff', 
+                padding: '10px', 
+                borderRadius: '4px',
+                overflow: 'auto',
+                fontSize: '12px'
+              }}>
+                
+{`Dados Disponíveis:
+${data ? '✅ Data Object' : '❌ Data Object'}
+${data?.users ? '  ✅ Users' : '  ❌ Users'}
+${data?.trails ? '  ✅ Trails' : '  ❌ Trails'}
+${data?.activity ? '  ✅ Activity' : '  ❌ Activity'}
+${data?.topTrails ? '  ✅ Top Trails' : '  ❌ Top Trails'}
+${data?.completionRate ? '  ✅ Completion Rate' : '  ❌ Completion Rate'}
+${data?.activeUsers ? '  ✅ Active Users' : '  ❌ Active Users'}
+
+
+
+Erro: ${error || 'Nenhum erro'}`}
+              </pre>
+            </details>
+          </div>
+        )}
+
+        {/* Mensagem de Erro */}
+        {error && (
+          <div className="error-message" style={{ marginBottom: '20px' }}>
+            <p>⚠️ Erro ao carregar dados: {error}</p>
+            <p style={{ fontSize: '12px', color: '#666' }}>Os gráficos e dados estão zerados até que o carregamento seja bem-sucedido.</p>
+          </div>
+        )}
+      
+      
+      
       <div className="dashboard-grid">
         {/* KPI Cards */}
         <section className="kpi-section">
@@ -33,7 +79,7 @@ export function DashboardManager() {
               <div className="kpi-icon">👥</div>
               <div className="kpi-content">
                 <p className="kpi-label">Total de Peregrinos</p>
-                <p className="kpi-value">{loading ? '-' : kpiData?.totalUsers || 0}</p>
+                <p className="kpi-value">{loading ? '-' : displayKpiData?.totalUsers || 0}</p>
                 <p className="kpi-subtext">Usuários ativos</p>
               </div>
             </div>
@@ -42,7 +88,7 @@ export function DashboardManager() {
               <div className="kpi-icon">✅</div>
               <div className="kpi-content">
                 <p className="kpi-label">Taxa de Conclusão</p>
-                <p className="kpi-value">{loading ? '-' : `${kpiData?.completionRate || 0}%`}</p>
+                <p className="kpi-value">{loading ? '-' : `${displayKpiData?.completionRate || 0}%`}</p>
                 <p className="kpi-subtext">Jornadas completas</p>
               </div>
             </div>
@@ -51,8 +97,8 @@ export function DashboardManager() {
               <div className="kpi-icon">⏳</div>
               <div className="kpi-content">
                 <p className="kpi-label">Trilhas Publicadas</p>
-                <p className="kpi-value">{loading ? '-' : kpiData?.publishedTrails || 0}</p>
-                <p className="kpi-subtext">Total: {loading ? '-' : kpiData?.totalTrails || 0}</p>
+                <p className="kpi-value">{loading ? '-' : displayKpiData?.publishedTrails || 0}</p>
+                <p className="kpi-subtext">Total: {loading ? '-' : displayKpiData?.totalTrails || 0}</p>
               </div>
             </div>
 
@@ -60,7 +106,7 @@ export function DashboardManager() {
               <div className="kpi-icon">🏪</div>
               <div className="kpi-content">
                 <p className="kpi-label">Usuários Ativos</p>
-                <p className="kpi-value">{loading ? '-' : kpiData?.activeUsers || 0}</p>
+                <p className="kpi-value">{loading ? '-' : displayKpiData?.activeUsers || 0}</p>
                 <p className="kpi-subtext">Jornadas em andamento</p>
               </div>
             </div>

@@ -82,15 +82,16 @@ export function TopNavigation() {
           gap: '0'
         }}>
           <button
-            onClick={() => {
+            onClick={() => navigateTo('/dashboard')} 
+            /* onClick={() => {
               if (user.userType === 2) {
                 navigateTo('/gestor');
               } else if (user.userType === 3) {
                 navigateTo('/comerciante');
               } else {
                 navigateTo('/peregrino');
-              }
-            }}
+              } 
+              */
             style={buttonStyle}
             onMouseEnter={(e) => e.target.style.background = 'rgba(255,255,255,0.12)'}
             onMouseLeave={(e) => e.target.style.background = 'none'}
