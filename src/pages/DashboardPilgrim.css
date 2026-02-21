@@ -82,6 +82,50 @@ section h2 {
   transition: width 0.3s ease;
 }
 
+/* Badges Section */
+.badges-section {
+  width: 100%;
+}
+
+.badges-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.badge-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.badge-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.badge-icon {
+  font-size: 28px;
+}
+
+.badge-label {
+  font-size: 12px;
+  color: #555;
+  font-weight: 600;
+}
+
+.badge-locked {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+
 /* Charts Section */
 .charts-section {
   width: 100%;
@@ -93,6 +137,10 @@ section h2 {
   gap: 20px;
 }
 
+.charts-container.full-width {
+  grid-template-columns: 1fr;
+}
+
 .chart-card {
   background: white;
   border-radius: 12px;
@@ -100,10 +148,20 @@ section h2 {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+.chart-card.map-card {
+  padding: 20px;
+}
+
 .chart-card h3 {
   margin: 0 0 20px 0;
   font-size: 16px;
   color: #333;
+}
+
+.chart-card-subtitle {
+  margin: -12px 0 16px 0;
+  font-size: 13px;
+  color: #8d6e63;
 }
 
 .chart-card.placeholder .placeholder-content {
@@ -115,6 +173,107 @@ section h2 {
   justify-content: center;
   color: #999;
   font-size: 14px;
+}
+
+.time-chart-canvas {
+  width: 100%;
+  min-width: 0;
+  grid-column: 1 / 3;
+}
+
+.chart-bar-fill {
+  width: 100%;
+  max-width: 32px;
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  border-radius: 6px 6px 4px 4px;
+  min-height: 6px;
+  transition: height 0.3s ease;
+}
+
+.chart-bar-fill.time {
+  background: linear-gradient(180deg, #00b894 0%, #0984e3 100%);
+}
+
+.chart-bar-label {
+  font-size: 11px;
+  color: #666;
+}
+
+.chart-bar-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: #333;
+}
+
+.chart-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: #999;
+  font-size: 14px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e1e8ed 100%);
+  border-radius: 8px;
+}
+
+.time-chart-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+.time-chart-legend {
+  background: #f9fafb;
+  border-radius: 10px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  justify-self: end;
+  width: 320px;
+  grid-column: 3;
+}
+
+.time-chart-legend h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.legend-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.legend-item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  color: #444;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.legend-id {
+  font-weight: 700;
+  color: #667eea;
+  min-width: 24px;
+}
+
+.legend-name {
+  color: #555;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 1024px) {
+  .time-chart-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Table Section */

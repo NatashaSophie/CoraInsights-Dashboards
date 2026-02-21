@@ -89,7 +89,7 @@ export async function fetchPublicAnalytics() {
     // ============================================
     // 8. RANKING DETALHADO (Top 10)
     // ============================================
-    const rankingDetalhado = calculateRankingDetalhado(users, trails, trailRoutes);
+    const rankingDetalhado = calculateRankingDetalhado(users, trails, trailRoutes, trailParts);
 
     return {
       // KPIs
@@ -443,8 +443,11 @@ function calculateConclusionsByTrecho(trailRoutes, trailParts) {
 /**
  * Calcula ranking detalhado dos top 10 peregrinos
  */
-function calculateRankingDetalhado(users, trails, trailRoutes) {
+function calculateRankingDetalhado(users, trails, trailRoutes, trailParts) {
   const ranking = [];
+  const trailPartsMap = new Map(
+    (trailParts || []).map(part => [part.id, part])
+  );
 
   users.forEach(user => {
     const userTrails = trails.filter(t => t.user?.id === user.id);
@@ -470,19 +473,33 @@ function calculateRankingDetalhado(users, trails, trailRoutes) {
         }
       }
 
-      // Somar distância dos trechos
+      // Somar distância e tempo real dos trechos
       completedRoutes.forEach(route => {
+        let distance = 0;
         if (route.route?.distance) {
-          totalDistance += parseFloat(route.route.distance);
+          distance = parseFloat(route.route.distance);
+        } else {
+          const routeId = route.route?.id || route.route;
+          const part = trailPartsMap.get(routeId);
+          if (part?.distance) {
+            distance = parseFloat(part.distance);
+          }
         }
-        if (route.route?.time) {
-          totalTime += parseFloat(route.route.time);
+
+        const routeStart = route.created_at || route.createdAt;
+        if (route.finishedAt && routeStart && distance > 0) {
+          const startTime = new Date(routeStart).getTime();
+          const endTime = new Date(route.finishedAt).getTime();
+          if (!Number.isNaN(startTime) && !Number.isNaN(endTime) && endTime > startTime) {
+            totalDistance += distance;
+            totalTime += (endTime - startTime) / 1000;
+          }
         }
       });
     });
 
     // Converter tempo para horas
-    const totalTimeHours = totalTime > 1000 ? totalTime / 3600 : totalTime;
+    const totalTimeHours = totalTime > 0 ? totalTime / 3600 : 0;
     const avgSpeed = totalTimeHours > 0 ? parseFloat((totalDistance / totalTimeHours).toFixed(2)) : 0;
     
     // Calcular pontuação

@@ -134,26 +134,46 @@ export function usePilgrimDashboard() {
   }, [user]);
 
   // Dados formatados para KPIs
+  const totalRoutes = data?.routes?.total || 13;
+  const routesCompleted = data?.routes?.completed || 0;
+  const completionPercentage = totalRoutes > 0
+    ? Math.min(100, Math.round((routesCompleted / totalRoutes) * 100))
+    : 0;
+
   const kpiData = data ? {
-    routesCompleted: data.routes?.completed || 0,
-    totalRoutes: data.routes?.total || 13,
-    completionPercentage: data.routes?.percentage || 0,
+    routesCompleted,
+    totalRoutes,
+    completionPercentage,
     avgTimeHours: data.timeStats?.avgHours || 0,
+    avgSpeedKmh: data.speedStats?.avgKmh || 0,
     achievements: data.achievements?.length || 0,
-    recentActivity: data.recentActivity || []
+    recentActivity: data.recentActivity || [],
+    fullPathCompletions: data.fullPathCompletions || 0,
+    completedTrailsByModality: data.completedTrailsByModality || { foot: 0, bike: 0 },
+    completedTrailsByDirection: data.completedTrailsByDirection || { correct: 0, inverse: 0 },
+    inProgressRoute: data.inProgressRoute || { hasActive: false }
   } : {
     routesCompleted: 0,
     totalRoutes: 13,
     completionPercentage: 0,
     avgTimeHours: 0,
+    avgSpeedKmh: 0,
     achievements: 0,
-    recentActivity: []
+    recentActivity: [],
+    fullPathCompletions: 0,
+    completedTrailsByModality: { foot: 0, bike: 0 },
+    completedTrailsByDirection: { correct: 0, inverse: 0 },
+    inProgressRoute: { hasActive: false }
   };
 
   return {
     data,
     kpiData,
     routeProgress: data?.routeProgress || [],
+    trailParts: data?.trailParts || [],
+    allCheckpoints: data?.allCheckpoints || [],
+    timePerRoute: data?.timePerRoute || [],
+    timePerRouteByModality: data?.timePerRouteByModality || [],
     recentActivity: data?.recentActivity || [],
     timeStats: data?.timeStats || {},
     trails: data?.trails || {},

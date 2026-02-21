@@ -1,11 +1,209 @@
 import React from 'react';
+import { Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
 import { AuthenticatedNavigation } from '../components/Navigation/AuthenticatedNavigation';
 import { DashboardLayout } from '../components/Layout/DashboardLayout';
 import { usePilgrimDashboard } from '../hooks/usePilgrimDashboard';
+import { TrailMap } from '../components/TrailMap/TrailMap';
 import './DashboardPilgrim.css';
 
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+
 export function DashboardPilgrim() {
-  const { kpiData, loading, error, debugInfo } = usePilgrimDashboard();
+  const {
+    kpiData,
+    loading,
+    error,
+    debugInfo,
+    routeProgress,
+    timePerRoute,
+    timePerRouteByModality,
+    trailParts,
+    allCheckpoints
+  } = usePilgrimDashboard();
+
+  const totalRoutes = 13;
+  const inProgressRoute = kpiData?.inProgressRoute || { hasActive: false };
+  const inProgressLabel = inProgressRoute.hasActive
+    ? (inProgressRoute.routeName || `Trecho ${inProgressRoute.routeId}`)
+    : 'Nenhum';
+
+  const routeProgressMap = new Map(
+    (routeProgress || []).map(route => [Number(route.id), route])
+  );
+
+  const routeBadges = Array.from({ length: totalRoutes }, (_, index) => {
+    const routeId = index + 1;
+    const progress = routeProgressMap.get(routeId);
+    return {
+      id: `route-${routeId}`,
+      label: `Trecho ${routeId}`,
+      unlocked: (progress?.completions || 0) > 0
+    };
+  });
+
+  const badges = [
+    ...routeBadges,
+    {
+      id: 'full-path',
+      label: 'Caminho completo',
+      unlocked: (kpiData?.fullPathCompletions || 0) > 0
+    },
+    {
+      id: 'full-path-foot',
+      label: 'Caminho a pe',
+      unlocked: (kpiData?.completedTrailsByModality?.foot || 0) > 0
+    },
+    {
+      id: 'full-path-bike',
+      label: 'Caminho pedalando',
+      unlocked: (kpiData?.completedTrailsByModality?.bike || 0) > 0
+    },
+    {
+      id: 'direction-correct',
+      label: 'Direcao correta',
+      unlocked: (kpiData?.completedTrailsByDirection?.correct || 0) > 0
+    },
+    {
+      id: 'direction-inverse',
+      label: 'Direcao inversa',
+      unlocked: (kpiData?.completedTrailsByDirection?.inverse || 0) > 0
+    }
+  ];
+
+  const timeChartData = (timePerRouteByModality || []).length
+    ? timePerRouteByModality.map(route => ({
+        id: route.id,
+        name: route.name,
+        walk: route.avgWalkHours || 0,
+        bike: route.avgBikeHours || 0
+      }))
+    : (timePerRoute || []).map(route => ({
+        id: route.id,
+        name: route.name,
+        walk: route.avgHours || 0,
+        bike: 0
+      }));
+
+  const timePartsMap = timeChartData.reduce((acc, part) => {
+    acc[String(part.id)] = part;
+    return acc;
+  }, {});
+
+  const partsLegend = (trailParts || []).map(part => ({
+    id: part.id,
+    name: part.name || `Trecho ${part.id}`
+  }));
+
+  const partsNameMap = (trailParts || []).reduce((acc, part) => {
+    acc[String(part.id)] = part.name || `Trecho ${part.id}`;
+    return acc;
+  }, {});
+
+  const getPartName = (id) => partsNameMap[String(id)] || `Trecho ${id}`;
+
+  const timeByRouteChart = {
+    labels: timeChartData.map(part => String(part.id)),
+    datasets: [
+      {
+        label: 'Caminhando',
+        data: timeChartData.map(part => part.walk || 0),
+        backgroundColor: '#00b894',
+        borderRadius: 6
+      },
+      {
+        label: 'Pedalando',
+        data: timeChartData.map(part => part.bike || 0),
+        backgroundColor: '#0984e3',
+        borderRadius: 6
+      }
+    ]
+  };
+
+  const timeChartOptions = {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+        callbacks: {
+          title: (items) => {
+            const id = items?.[0]?.label;
+            return getPartName(id);
+          },
+          beforeBody: (items) => {
+            const id = items?.[0]?.label;
+            const part = timePartsMap[String(id)];
+            const total = (part?.walk || 0) + (part?.bike || 0);
+            return `Tempo total: ${total.toFixed(2)}h`;
+          },
+          label: (item) => `${item.dataset.label}: ${item.formattedValue}h`
+        }
+      }
+    },
+    scales: {
+      x: { stacked: true, ticks: { maxRotation: 0, minRotation: 0 } },
+      y: { stacked: true, beginAtZero: true }
+    }
+  };
+  const segmentNames = trailParts?.length
+    ? trailParts.map(part => part.name || `Trecho ${part.id}`)
+    : Array.from({ length: totalRoutes }, (_, index) => `Trecho ${index + 1}`);
+
+  const routeProgressById = new Map(
+    (routeProgress || []).map(route => [Number(route.id), route])
+  );
+  const segmentStatus = trailParts?.length
+    ? trailParts.map(part => ({
+        completed: (routeProgressById.get(Number(part.id))?.completions || 0) > 0
+      }))
+    : Array.from({ length: totalRoutes }, () => ({ completed: false }));
+
+  const inProgressRouteId = inProgressRoute?.hasActive
+    ? Number(inProgressRoute.routeId)
+    : null;
+  const segmentTooltips = trailParts?.length
+    ? trailParts.map(part => {
+        const progress = routeProgressById.get(Number(part.id));
+        const completions = progress?.completions || 0;
+        const base = part.name || `Trecho ${part.id}`;
+        const parts = [base];
+        if (completions > 0) {
+          parts.push(`Percorrido ${completions} ${completions === 1 ? 'vez' : 'vezes'}`);
+        } else {
+          parts.push('Nunca percorrido');
+        }
+        if (inProgressRouteId && Number(part.id) === inProgressRouteId) {
+          parts.push('Trilha em andamento');
+        }
+        return parts.join(' - ');
+      })
+    : Array.from({ length: totalRoutes }, (_, index) => `Trecho ${index + 1} - Nunca percorrido`);
+
+  const orderedCheckpoints = trailParts
+    .map(part => part.fromCheckpoint)
+    .filter(checkpoint => checkpoint && Number.isFinite(checkpoint.lat) && Number.isFinite(checkpoint.lon));
+
+  const lastToCheckpoint = trailParts.length
+    ? trailParts[trailParts.length - 1].toCheckpoint
+    : null;
+  if (lastToCheckpoint && Number.isFinite(lastToCheckpoint.lat) && Number.isFinite(lastToCheckpoint.lon)) {
+    orderedCheckpoints.push(lastToCheckpoint);
+  }
+
+  const checkpointMarkers = (allCheckpoints || []).filter(
+    checkpoint => checkpoint && Number.isFinite(checkpoint.lat) && Number.isFinite(checkpoint.lon)
+  );
 
   return (
     <>
@@ -53,10 +251,19 @@ export function DashboardPilgrim() {
           <h2>Seus Indicadores</h2>
           <div className="kpi-cards">
             <div className="kpi-card">
+              <div className="kpi-icon">🏁</div>
+              <div className="kpi-content">
+                <p className="kpi-label">Caminho Completo</p>
+                <p className="kpi-value">{loading ? '-' : kpiData?.fullPathCompletions || 0}</p>
+                <p className="kpi-subtext">Percursos concluídos</p>
+              </div>
+            </div>
+
+            <div className="kpi-card">
               <div className="kpi-icon">📍</div>
               <div className="kpi-content">
                 <p className="kpi-label">Trechos Completados</p>
-                <p className="kpi-value">{loading ? '-' : `${kpiData?.routesCompleted || 0}/${kpiData?.totalRoutes || 13}`}</p>
+                <p className="kpi-value">{loading ? '-' : `${kpiData?.routesCompleted || 0}`}</p>
                 <div className="kpi-progress">
                   <div className="progress-bar" style={{ width: `${kpiData?.completionPercentage || 0}%` }}></div>
                 </div>
@@ -64,49 +271,87 @@ export function DashboardPilgrim() {
             </div>
 
             <div className="kpi-card">
-              <div className="kpi-icon">⏱️</div>
+              <div className="kpi-icon">💨</div>
               <div className="kpi-content">
-                <p className="kpi-label">Tempo Médio por Trecho</p>
-                <p className="kpi-value">{loading ? '-' : `${kpiData?.avgTimeHours || 0}h`}</p>
+                <p className="kpi-label">Velocidade Média</p>
+                <p className="kpi-value">{loading ? '-' : `${kpiData?.avgSpeedKmh || 0} km/h`}</p>
                 <p className="kpi-subtext">Desde o início</p>
               </div>
             </div>
 
             <div className="kpi-card">
-              <div className="kpi-icon">📅</div>
+              <div className="kpi-icon">🧭</div>
               <div className="kpi-content">
-                <p className="kpi-label">Próximo Trecho</p>
-                <p className="kpi-value">Trecho {(kpiData?.routesCompleted || 0) + 1}</p>
-                <p className="kpi-subtext">A definir</p>
+                <p className="kpi-label">Percurso em andamento</p>
+                <p className="kpi-value">{loading ? '-' : inProgressLabel}</p>
+                <p className="kpi-subtext">{inProgressRoute.hasActive ? 'Em andamento' : 'Sem percurso ativo'}</p>
               </div>
             </div>
+          </div>
+        </section>
 
-            <div className="kpi-card">
-              <div className="kpi-icon">🏆</div>
-              <div className="kpi-content">
-                <p className="kpi-label">Conquistas Desbloqueadas</p>
-                <p className="kpi-value">{loading ? '-' : kpiData?.achievements || 0}</p>
-                <p className="kpi-subtext">Badges e certificados</p>
+        <section className="badges-section">
+          <h2>Conquistas Alcançadas</h2>
+          <div className="badges-grid">
+            {badges.map(badge => (
+              <div
+                key={badge.id}
+                className={`badge-card ${badge.unlocked ? 'badge-unlocked' : 'badge-locked'}`}
+                title={badge.unlocked ? 'Conquista desbloqueada' : 'Conquista bloqueada'}
+              >
+                <div className="badge-icon">🏅</div>
+                <div className="badge-label">{badge.label}</div>
               </div>
-            </div>
+            ))}
           </div>
         </section>
 
         {/* Gráficos e Análises */}
         <section className="charts-section">
           <h2>Análises da Jornada</h2>
-          <div className="charts-container">
-            <div className="chart-card placeholder">
+          <div className="charts-container full-width">
+            <div className="chart-card map-card">
               <h3>Progresso da Trilha</h3>
-              <div className="placeholder-content">
-                [Gráfico de Progresso]
-              </div>
+              <TrailMap
+                kmlUrl="http://localhost:1337/maps/caminho-cora.kml"
+                completedCount={kpiData?.routesCompleted || 0}
+                totalCount={totalRoutes}
+                segmentNames={segmentNames}
+                checkpoints={orderedCheckpoints}
+                markers={checkpointMarkers}
+                segmentStatus={segmentStatus}
+                segmentTooltips={segmentTooltips}
+              />
             </div>
+          </div>
+        </section>
 
-            <div className="chart-card placeholder">
+        <section className="charts-section">
+          <div className="charts-container full-width">
+            <div className="chart-card">
               <h3>Tempo por Trecho</h3>
-              <div className="placeholder-content">
-                [Gráfico de Tempo]
+              <p className="chart-card-subtitle">Tempo médio para conclusão de cada trecho</p>
+              <div className="time-chart-layout">
+                <div className="time-chart-canvas">
+                  <Bar data={timeByRouteChart} options={timeChartOptions} />
+                </div>
+                <div className="time-chart-legend">
+                  <h4>Legenda (ID - Trecho)</h4>
+                  <div className="legend-list">
+                    {(partsLegend.length
+                      ? partsLegend
+                      : Array.from({ length: totalRoutes }, (_, index) => ({
+                          id: index + 1,
+                          name: `Trecho ${index + 1}`
+                        }))
+                    ).map(part => (
+                      <div key={part.id} className="legend-item">
+                        <span className="legend-id">{part.id}</span>
+                        <span className="legend-name">{part.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

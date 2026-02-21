@@ -24,7 +24,7 @@ export function AuthenticatedNavigation() {
         position: 'sticky',
         top: 0,
         zIndex: 1001,
-        marginBottom: '8px'
+        marginBottom: 0
       }}>
         <div style={{
           fontSize: '18px',

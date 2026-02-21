@@ -44,7 +44,10 @@ export function TopNavigation() {
       color: 'white',
       padding: '24px 0',
       boxShadow: '0 4px 20px rgba(93, 64, 55, 0.3)',
-      marginBottom: '32px'
+      marginBottom: '32px',
+      position: 'sticky',
+      top: '64px',
+      zIndex: 1000
     }}>
       <div style={{
         maxWidth: '1200px',
