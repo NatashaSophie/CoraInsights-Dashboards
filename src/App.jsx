@@ -16,13 +16,20 @@ import './App.css';
 function AppContent() {
   const { user } = useAuth();
 
+  const getDashboardPath = (currentUser) => {
+    if (!currentUser) return '/peregrino';
+    if (currentUser.userType === 2) return '/gestor';
+    if (currentUser.userType === 3) return '/comerciante';
+    return '/peregrino';
+  };
+
   return (
     <Router>
       <Routes>
         {/* Rotas públicas */}
         <Route path="/" element={<Home />} />
         <Route path="/public-dashboard" element={<DashboardPublic />} />
-        <Route path="/login" element={!user ? <Login /> : <Navigate to="/peregrino" />} />
+        <Route path="/login" element={!user ? <Login /> : <Navigate to={getDashboardPath(user)} />} />
 
         {/* Rotas protegidas - Dashboard */}
         <Route path="/dashboard" element={user ? <Home /> : <Navigate to="/login" />} />

@@ -5,6 +5,17 @@
 
 const API_URL = 'http://localhost:1337';
 
+function getAuthHeaders() {
+  const token = localStorage.getItem('jwt');
+  if (!token) {
+    throw new Error('Token não encontrado. Faça login novamente.');
+  }
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  };
+}
+
 /**
  * Formata data para YYYY-MM-DD
  */
@@ -94,11 +105,6 @@ export async function fetchManagerAnalytics(startDate = null, endDate = null) {
  */
 export async function fetchMerchantAnalytics(merchantId, startDate = null, endDate = null) {
   try {
-    const token = localStorage.getItem('jwt');
-    if (!token) {
-      throw new Error('Token não encontrado. Faça login novamente.');
-    }
-
     if (!merchantId) {
       throw new Error('merchantId é obrigatório');
     }
@@ -109,10 +115,7 @@ export async function fetchMerchantAnalytics(merchantId, startDate = null, endDa
 
     const response = await fetch(`${API_URL}/analytics/merchant?start=${start}&end=${end}&merchantId=${merchantId}`, {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders()
     });
 
     if (!response.ok) {
@@ -125,4 +128,34 @@ export async function fetchMerchantAnalytics(merchantId, startDate = null, endDa
     console.error('Erro ao buscar analytics do comerciante:', error);
     throw error;
   }
+}
+
+export async function createEstablishment(payload) {
+  const response = await fetch(`${API_URL}/establishments`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || `Erro ao criar estabelecimento: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function updateEstablishment(id, payload) {
+  const response = await fetch(`${API_URL}/establishments/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || `Erro ao atualizar estabelecimento: ${response.status}`);
+  }
+
+  return response.json();
 }

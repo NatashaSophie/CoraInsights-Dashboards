@@ -11,6 +11,13 @@ function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  const getDashboardPath = (currentUser) => {
+    if (!currentUser) return '/peregrino';
+    if (currentUser.userType === 2) return '/gestor';
+    if (currentUser.userType === 3) return '/comerciante';
+    return '/peregrino';
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -18,7 +25,7 @@ function Login() {
 
     const result = await login(username, password);
     if (result.success) {
-      navigate('/peregrino');
+      navigate(getDashboardPath(result.user));
     } else {
       setError(result.error);
     }
@@ -34,7 +41,7 @@ function Login() {
     if (result.success) {
       setUsername('');
       setPassword('');
-      navigate('/peregrino');
+      navigate(getDashboardPath(result.user));
     } else {
       setError(result.error);
       setPassword('');

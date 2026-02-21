@@ -160,6 +160,10 @@ section h2 {
   width: 100%;
 }
 
+.points-section .section-header {
+  margin-top: 20px;
+}
+
 .section-header {
   display: flex;
   align-items: center;
@@ -247,9 +251,256 @@ section h2 {
   color: #856404;
 }
 
+.badge.rejected {
+  background: #f8d7da;
+  color: #721c24;
+}
+
 .badge.income {
   background: #d4edda;
   color: #155724;
+}
+
+.merchant-form-section {
+  width: 100%;
+}
+
+.merchant-form {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field.full {
+  grid-column: 1 / -1;
+}
+
+.form-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.form-field input,
+.form-field textarea {
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #333;
+  background: #f9fafb;
+}
+
+.form-field input:focus,
+.form-field textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  background: #ffffff;
+}
+
+.form-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.form-message {
+  margin: 12px 0 0;
+  font-size: 13px;
+}
+
+.form-message.error {
+  color: #b00020;
+}
+
+.form-message.success {
+  color: #2e7d32;
+}
+
+.segment-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.segment-stats-grid.stacked {
+  grid-template-columns: 1fr;
+}
+
+.segment-card h3 {
+  margin: 0 0 12px 0;
+}
+
+.segment-subcards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.segment-subcard.span-full {
+  grid-column: 1 / -1;
+}
+
+.segment-subcard {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #edf2f7;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.segment-subcard h4 {
+  margin: 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.segment-subcard-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.year-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.year-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #555;
+  cursor: pointer;
+}
+
+.year-toggle input {
+  display: none;
+}
+
+.year-toggle.inactive span:last-child {
+  text-decoration: line-through;
+  color: #999;
+}
+
+.year-toggle.inactive .year-swatch {
+  opacity: 0.4;
+}
+
+.year-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.year-empty {
+  font-size: 12px;
+  color: #999;
+}
+
+.chart-wrapper {
+  position: relative;
+  height: 200px;
+}
+
+.chart-doughnut {
+  position: relative;
+  height: 200px;
+}
+
+.chart-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-size: 12px;
+  color: #555;
+}
+
+.chart-center strong {
+  display: block;
+  font-size: 20px;
+  color: #333;
+}
+
+.chart-legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: #555;
+}
+
+.chart-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.chart-swatch.male {
+  background: #2d9cdb;
+}
+
+.chart-swatch.female {
+  background: #e84393;
+}
+
+.segment-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.segment-columns h4 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: #444;
+}
+
+.segment-columns p {
+  margin: 4px 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.dashboard-footer {
+  text-align: center;
+  padding: 32px;
+  color: #a1887f;
+  font-size: 14px;
 }
 
 /* Sales Section */

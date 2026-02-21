@@ -222,7 +222,11 @@ export function TrailMap({
             .addTo(layerGroup);
         }
 
-        (markers || orderedCheckpoints).forEach(checkpoint => {
+        orderedCheckpoints.forEach(checkpoint => {
+          if (!Number.isFinite(checkpoint.lat) || !Number.isFinite(checkpoint.lon)) {
+            return;
+          }
+
           L.circleMarker([checkpoint.lat, checkpoint.lon], {
             radius: 6,
             color: '#1b6ca8',
@@ -230,8 +234,26 @@ export function TrailMap({
             fillOpacity: 0.9,
             weight: 2
           })
-            .bindTooltip(checkpoint.name || 'Checkpoint', { direction: 'top', sticky: true })
+            .bindTooltip(checkpoint.tooltip || checkpoint.name || 'Checkpoint', { direction: 'top', sticky: true })
             .addTo(layerGroup);
+        });
+
+        (markers || []).forEach(marker => {
+          if (!Number.isFinite(marker.lat) || !Number.isFinite(marker.lon)) {
+            return;
+          }
+
+          if (marker.iconUrl) {
+            const icon = L.icon({
+              iconUrl: marker.iconUrl,
+              iconSize: marker.iconSize || [32, 32],
+              iconAnchor: marker.iconAnchor || [16, 32]
+            });
+            L.marker([marker.lat, marker.lon], { icon })
+              .bindTooltip(marker.tooltip || marker.name || 'Checkpoint', { direction: 'top', sticky: true })
+              .addTo(layerGroup);
+            return;
+          }
         });
 
         map.fitBounds(fullLine.getBounds(), { padding: [20, 20] });

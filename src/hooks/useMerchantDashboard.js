@@ -10,6 +10,9 @@ export function useMerchantDashboard(merchantId = null, startDate = null, endDat
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [reloadToken, setReloadToken] = useState(0);
+
+  const refresh = () => setReloadToken(prev => prev + 1);
 
   useEffect(() => {
     async function loadData() {
@@ -33,7 +36,7 @@ export function useMerchantDashboard(merchantId = null, startDate = null, endDat
     }
 
     loadData();
-  }, [merchantId, startDate, endDate]);
+  }, [merchantId, startDate, endDate, reloadToken]);
 
   // Dados formatados para KPIs
   const kpiData = data ? {
@@ -47,11 +50,17 @@ export function useMerchantDashboard(merchantId = null, startDate = null, endDat
     data,
     kpiData,
     establishment: data?.establishment || {},
+    establishments: data?.establishments || [],
+    trailParts: data?.trailParts || [],
+    checkpoints: data?.checkpoints || [],
+    segmentsWithEstablishments: data?.segmentsWithEstablishments || [],
+    segmentStats: data?.segmentStats || [],
     visitors: data?.visitors || {},
     activity: data?.activity || [],
     peakHours: data?.peakHours || [],
     services: data?.services || [],
     loading,
-    error
+    error,
+    refresh
   };
 }
