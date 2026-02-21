@@ -766,7 +766,7 @@ function DashboardPublic({ hidePublicNav = false, hidePublicHeader = false }) {
         </div>
 
         <footer style={styles.footer}>
-          <p>Caminho de Cora &#169; 2026 - Dashboard Publico de Estatisticas</p>
+          <p>Caminho de Cora &#169; 2026 - Dashboards</p>
         </footer>
       </main>
     </div>

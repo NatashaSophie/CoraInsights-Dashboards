@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -15,15 +15,16 @@ import { usePilgrimDashboard } from '../hooks/usePilgrimDashboard';
 import { TrailMap } from '../components/TrailMap/TrailMap';
 import './DashboardPilgrim.css';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
-
 export function DashboardPilgrim() {
+  const [sortKey, setSortKey] = useState('recent');
+  const [sortDir, setSortDir] = useState('desc');
   const {
     kpiData,
     loading,
     error,
     debugInfo,
     routeProgress,
+    routeHistory,
     timePerRoute,
     timePerRouteByModality,
     trailParts,
@@ -59,22 +60,22 @@ export function DashboardPilgrim() {
     },
     {
       id: 'full-path-foot',
-      label: 'Caminho a pe',
+      label: 'Caminho completo a pé',
       unlocked: (kpiData?.completedTrailsByModality?.foot || 0) > 0
     },
     {
       id: 'full-path-bike',
-      label: 'Caminho pedalando',
+      label: 'Caminho completo pedalando',
       unlocked: (kpiData?.completedTrailsByModality?.bike || 0) > 0
     },
     {
       id: 'direction-correct',
-      label: 'Direcao correta',
+      label: 'Direção correta',
       unlocked: (kpiData?.completedTrailsByDirection?.correct || 0) > 0
     },
     {
       id: 'direction-inverse',
-      label: 'Direcao inversa',
+      label: 'Direção inversa',
       unlocked: (kpiData?.completedTrailsByDirection?.inverse || 0) > 0
     }
   ];
@@ -205,12 +206,233 @@ export function DashboardPilgrim() {
     checkpoint => checkpoint && Number.isFinite(checkpoint.lat) && Number.isFinite(checkpoint.lon)
   );
 
+  const formatDate = (value) => (value ? value.toLocaleDateString('pt-BR') : '-');
+  const formatHours = (value) => {
+    if (!value || value <= 0) return '-';
+    const totalMinutes = Math.round(value * 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours === 0) return `${minutes}m`;
+    if (minutes === 0) return `${hours}h`;
+    return `${hours}h ${minutes}m`;
+  };
+  const modalityLabel = (value) => {
+    const raw = String(value || '').toLowerCase();
+    if (raw === 'pedestre' || raw === 'foot' || raw === 'pe') return 'Pedestre';
+    if (raw === 'bicicleta' || raw === 'bike' || raw === 'pedal') return 'Bicicleta';
+    return raw ? raw : '-';
+  };
+
+  const directionLabel = (value) => (value ? 'Inversa' : 'Correta');
+
+  const sortColumns = {
+    trecho: { label: 'Trecho', accessor: (route) => route.name || `Trecho ${route.routeId}` },
+    inicio: { label: 'Data de Início', accessor: (route) => route.startAt ? new Date(route.startAt).getTime() : 0 },
+    conclusao: { label: 'Data de Conclusão', accessor: (route) => route.finishedAt ? new Date(route.finishedAt).getTime() : 0 },
+    modalidade: { label: 'Modalidade', accessor: (route) => modalityLabel(route.modality) },
+    direcao: { label: 'Direção', accessor: (route) => directionLabel(route.direction) },
+    tempo: { label: 'Tempo Gasto', accessor: (route) => route.hoursSpent || 0 },
+    velocidade: { label: 'Velocidade Média', accessor: (route) => route.avgSpeed || 0 },
+    status: { label: 'Status', accessor: (route) => route.status || '' }
+  };
+
+  const sortedRouteHistory = useMemo(() => {
+    const list = [...(routeHistory || [])];
+    if (!list.length) return list;
+
+    if (sortKey === 'recent') {
+      return list.sort((a, b) => {
+        const aCompleted = a.status === 'concluido';
+        const bCompleted = b.status === 'concluido';
+        if (aCompleted !== bCompleted) {
+          return aCompleted ? 1 : -1;
+        }
+        const aTime = aCompleted
+          ? (a.finishedAt ? new Date(a.finishedAt).getTime() : 0)
+          : (a.startAt ? new Date(a.startAt).getTime() : 0);
+        const bTime = bCompleted
+          ? (b.finishedAt ? new Date(b.finishedAt).getTime() : 0)
+          : (b.startAt ? new Date(b.startAt).getTime() : 0);
+        return bTime - aTime;
+      });
+    }
+
+    const column = sortColumns[sortKey];
+    if (!column) return list;
+    const direction = sortDir === 'asc' ? 1 : -1;
+    return list.sort((a, b) => {
+      const aVal = column.accessor(a);
+      const bVal = column.accessor(b);
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return (aVal - bVal) * direction;
+      }
+      return String(aVal).localeCompare(String(bVal), 'pt-BR', { sensitivity: 'base' }) * direction;
+    });
+  }, [routeHistory, sortKey, sortDir]);
+
+  const visibleRoutes = sortedRouteHistory;
+  const handleSort = (key) => {
+    if (sortKey === key) {
+      setSortDir(prev => (prev === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+    setSortKey(key);
+    setSortDir('asc');
+  };
+
+  const insightCards = [
+    {
+      id: 'regras',
+      title: 'Dicas e regras essenciais',
+      rules: [
+        {
+          icon: '/insights/acompanhado.png',
+          text: 'Caminhe sempre acompanhado.'
+        },
+        {
+          icon: '/insights/hor%C3%A1rios.png',
+          text: 'Fique atento aos horarios.'
+        },
+        {
+          icon: '/insights/porteira.png',
+          text: 'Mantenha as porteiras fechadas.'
+        },
+        {
+          icon: '/insights/moto.png',
+          text: 'Uso de motocicletas e proibido no caminho.'
+        }
+      ]
+    },
+  ];
+
+  const sinalTelefoneInfo = {
+    resumo: 'A cobertura varia bastante entre trechos rurais, vilarejos e áreas de natureza preservada.',
+    destaques: [
+      'A Claro tem apresentado melhor desempenho em boa parte do trajeto, mas não garante sinal contínuo.',
+      'Proximidade de cidades e povoados (Corumbá de Goiás, Pirenópolis, Jaraguá e Cidade de Goiás) tende a ter sinal mais estável.',
+      'Estradas de terra e serras podem ficar sem sinal por vários quilômetros.'
+    ],
+    dicas: [
+      'Avise familiares sobre possíveis trechos sem comunicação.',
+      'Leve bateria extra ou powerbank.',
+      'Use mapas e rotas off-line para navegação sem internet.',
+      'Aproveite a desconexão como parte da experiência.'
+    ],
+    fonte: 'https://caminhodecoracoralina.com.br/sinal-de-telefone/'
+  };
+
+  const telefonesUteis = {
+    aviso: 'Confirme horários e dias de saída com as empresas antes de viajar.',
+    grupos: [
+      {
+        empresa: 'Empresa Moreira',
+        contato: '+55 (62) 3018-9511 / (62) 3371-1510',
+        site: 'https://empresamoreira.com.br/',
+        rotas: [
+          'Goiânia -> Cidade de Goiás',
+          'Cidade de Goiás -> Goiânia',
+          'Brasília -> Cidade de Goiás'
+        ]
+      },
+      {
+        empresa: 'Auto Viação Goianésia',
+        contato: 'Taguatinga: (62) 9 9217-7969 | Interestadual: (62) 9 9237-3056',
+        site: 'http://www.viacaogoianesia.com.br/',
+        rotas: [
+          'Brasília -> Corumbá de Goiás',
+          'Corumbá de Goiás -> Brasília'
+        ]
+      },
+      {
+        empresa: 'Expresso São José do Tocantins',
+        contato: '(62) 3311-1900 / 3324-1729',
+        rotas: [
+          'Goiânia -> Corumbá de Goiás',
+          'Corumbá de Goiás -> Goiânia',
+          'Transporte coletivo - Anápolis -> Corumbá de Goiás -> Anápolis'
+        ]
+      }
+    ],
+    fonte: 'https://caminhodecoracoralina.com.br/telefones-uteis/'
+  };
+
+  const prepCaminhantes = {
+    duration: '13 a 15 dias',
+    highlights: [
+      'Planeje distância, clima e inclinação do terreno.',
+      'Evite caminhar no período noturno.',
+      'Saia cedo e caminhe apenas durante o dia.'
+    ],
+    planejamento: [
+      'Calcule o tempo médio por trecho e seu preparo físico.',
+      'Planeje para chegar em segurança ao próximo ponto de apoio.',
+      'A segurança depende do planejamento do ritmo e do clima.'
+    ],
+    checklist: [
+      'GPS, celular e carregador externo.',
+      'Mochila ataque com presilhas no peito e quadris.',
+      'Roupas leves e de secagem rápida.',
+      'Camiseta UV, chapéu e protetor solar fator 70.',
+      'Tênis ou bota de trilha já adaptados.',
+      'Lanterna de cabeça, canivete e saco de lixo.',
+      'Kit de primeiros socorros e documentos.',
+      '3 litros de água (2 congelados).'
+    ],
+    cuidados: [
+      'Repelente, álcool em gel 70% e lenço umedecido.',
+      'Higiene pessoal, toalha de trilha e máscara.',
+      'Vaselina e esparadrapo para preparar os pés.',
+      'Agulha e linha para cuidar de bolhas.',
+      'Cajado para apoio quando necessário.'
+    ],
+    atencao: [
+      'Evite caminhar à noite.',
+      'Não entre em atalhos.',
+      'Saia do local de hospedagem o mais cedo possível.'
+    ]
+  };
+
+  const prepCiclistas = {
+    duration: '4 a 8 dias',
+    highlights: [
+      'Evite mochila nas costas; use bagageiro.',
+      'Evite pedalar no período noturno.',
+      'Saia cedo e pedale apenas durante o dia.'
+    ],
+    planejamento: [
+      'Avalie distância, tempo, inclinação e clima.',
+      'Ajuste bagagem e ritmo para chegar em segurança.',
+      'Planejamento do tempo médio e essencial.'
+    ],
+    checklist: [
+      'GPS, celular e carregador externo.',
+      'Luvas, óculos e camiseta UV.',
+      'Kit remendo com lixa, espátulas e remendos.',
+      'Bomba de mão e duas câmaras de ar reserva.',
+      'Canivete multiuso e óleo lubrificante.',
+      'Sapatilha ou tênis MTB já adaptados.',
+      'Lanterna de cabeça e saco de lixo.'
+    ],
+    cuidados: [
+      'Protetor solar fator 70 e repelente.',
+      'Kit de primeiros socorros e documentos.',
+      'Higiene pessoal, toalha de trilha e máscara.',
+      '3 litros de água (2 congelados).',
+      'Lenço umedecido e álcool em gel 70%.'
+    ],
+    atencao: [
+      'Evite pedalar à noite.',
+      'Não entre em atalhos.',
+      'Saia do local de hospedagem o mais cedo possível.'
+    ]
+  };
+
   return (
     <>
       <AuthenticatedNavigation />
       <DashboardLayout>
         {/* DEBUG: Mostrar informações de carregamento */}
-        {debugInfo && (
+        {/*debugInfo && (
           <div style={{
             background: '#f5f5f5',
             border: '1px solid #ddd',
@@ -228,7 +450,7 @@ export function DashboardPilgrim() {
             <p>❌ Campos falhados: {debugInfo.failedFields.length > 0 ? debugInfo.failedFields.join(', ') : 'Nenhum'}</p>
             {debugInfo.error && <p>🚨 Erro: {debugInfo.error}</p>}
           </div>
-        )}
+        ) */}
 
         {/* Mensagem de erro (se houver) */}
         {error && (
@@ -275,7 +497,6 @@ export function DashboardPilgrim() {
               <div className="kpi-content">
                 <p className="kpi-label">Velocidade Média</p>
                 <p className="kpi-value">{loading ? '-' : `${kpiData?.avgSpeedKmh || 0} km/h`}</p>
-                <p className="kpi-subtext">Desde o início</p>
               </div>
             </div>
 
@@ -359,74 +580,292 @@ export function DashboardPilgrim() {
 
         {/* Tabelas */}
         <section className="table-section">
-          <h2>Trechos Realizados</h2>
+          <h2>Trechos Realizados e em Andamento</h2>
           <div className="table-container">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Trecho</th>
-                  <th>Data de Início</th>
-                  <th>Data de Conclusão</th>
-                  <th>Tempo Gasto</th>
-                  <th>Status</th>
+                  <th className="sortable" onClick={() => handleSort('trecho')}>
+                    Trecho{sortKey === 'trecho' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                  </th>
+                  <th className="sortable" onClick={() => handleSort('inicio')}>
+                    Data de Início{sortKey === 'inicio' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                  </th>
+                  <th className="sortable" onClick={() => handleSort('conclusao')}>
+                    Data de Conclusão{sortKey === 'conclusao' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                  </th>
+                  <th className="sortable" onClick={() => handleSort('modalidade')}>
+                    Modalidade{sortKey === 'modalidade' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                  </th>
+                  <th className="sortable" onClick={() => handleSort('direcao')}>
+                    Direção{sortKey === 'direcao' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                  </th>
+                  <th className="sortable" onClick={() => handleSort('tempo')}>
+                    Tempo Gasto{sortKey === 'tempo' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                  </th>
+                  <th className="sortable" onClick={() => handleSort('velocidade')}>
+                    Velocidade Média{sortKey === 'velocidade' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                  </th>
+                  <th className="sortable" onClick={() => handleSort('status')}>
+                    Status{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                  </th>
+                  <th>Certificado</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>Trecho 1</td>
-                  <td>01/01/2024</td>
-                  <td>05/01/2024</td>
-                  <td>4h 30m</td>
-                  <td><span className="badge completed">Concluído</span></td>
-                </tr>
-                <tr>
-                  <td>Trecho 2</td>
-                  <td>06/01/2024</td>
-                  <td>10/01/2024</td>
-                  <td>5h 15m</td>
-                  <td><span className="badge completed">Concluído</span></td>
-                </tr>
-                <tr>
-                  <td>Trecho 3</td>
-                  <td>12/01/2024</td>
-                  <td>16/01/2024</td>
-                  <td>3h 45m</td>
-                  <td><span className="badge completed">Concluído</span></td>
-                </tr>
-                <tr>
-                  <td>Trecho 4</td>
-                  <td>18/01/2024</td>
-                  <td>22/01/2024</td>
-                  <td>6h 00m</td>
-                  <td><span className="badge completed">Concluído</span></td>
-                </tr>
-                <tr>
-                  <td>Trecho 5</td>
-                  <td>24/01/2024</td>
-                  <td>28/01/2024</td>
-                  <td>5h 30m</td>
-                  <td><span className="badge completed">Concluído</span></td>
-                </tr>
+                {visibleRoutes.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="table-empty">Nenhum trecho encontrado.</td>
+                  </tr>
+                ) : visibleRoutes.map((route) => {
+                  const startDate = route.startAt ? new Date(route.startAt) : null;
+                  const endDate = route.finishedAt ? new Date(route.finishedAt) : null;
+                  const isCompleted = route.status === 'concluido';
+                  return (
+                    <tr key={route.id}>
+                      <td>{route.name || `Trecho ${route.routeId}`}</td>
+                      <td>{formatDate(startDate)}</td>
+                      <td>{formatDate(endDate)}</td>
+                      <td>{modalityLabel(route.modality)}</td>
+                      <td>{directionLabel(route.direction)}</td>
+                      <td>{isCompleted ? formatHours(route.hoursSpent) : '-'}</td>
+                      <td>{route.avgSpeed ? `${route.avgSpeed.toFixed(1)} km/h` : '-'}</td>
+                      <td>
+                        <span className={`badge ${isCompleted ? 'completed' : 'in-progress'}`}>
+                          {isCompleted ? 'Concluído' : 'Em andamento'}
+                        </span>
+                      </td>
+                      <td>
+                        <button className="btn btn-secondary" disabled={!isCompleted} aria-label="Baixar certificado">
+                          <span className="download-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                              <path d="M12 3a1 1 0 0 1 1 1v9.17l2.59-2.58a1 1 0 1 1 1.41 1.41l-4.3 4.3a1 1 0 0 1-1.4 0l-4.3-4.3a1 1 0 1 1 1.41-1.41L11 13.17V4a1 1 0 0 1 1-1zm-7 14a1 1 0 0 1 1 1v2h12v-2a1 1 0 1 1 2 0v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1z" />
+                            </svg>
+                          </span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </section>
 
-        {/* Próximos Passos */}
-        <section className="next-steps-section">
-          <h2>Próximos Passos</h2>
-          <div className="next-steps-container">
-            <div className="next-step-card">
-              <div className="step-number">6</div>
-              <div className="step-content">
-                <h4>Próximo Trecho</h4>
-                <p>Prepare-se para iniciar o trecho 6. Confira o mapa e as informações disponíveis.</p>
-                <button className="btn btn-primary">Visualizar Trecho</button>
+        {/* Insights */}
+        <section className="insights-section">
+          <h2>Insights</h2>
+          <div className="insights-grid">
+            {insightCards.map(card => (
+              <article
+                className={`insight-card ${card.id === 'sinalizacao' || card.id === 'regras' ? 'full-width' : ''} ${card.id === 'regras' ? 'rules' : ''}`}
+                key={card.id}
+              >
+                <h4>{card.title}</h4>
+                {card.images && (
+                  <div className="insight-images">
+                    {card.images.map((image) => (
+                      <img key={image.src} src={image.src} alt={image.alt} loading="lazy" />
+                    ))}
+                  </div>
+                )}
+                {card.rules && (
+                  <div className="insight-rules">
+                    {card.rules.map((rule) => (
+                      <div className="insight-rule" key={rule.text}>
+                        <img src={rule.icon} alt="" loading="lazy" />
+                        <span>{rule.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {card.text && <p>{card.text}</p>}
+                {card.bullets && (
+                  <ul className="insight-list">
+                    {card.bullets.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                )}
+                {card.href && (
+                  <a className="insight-link" href={card.href}>
+                    {card.linkLabel}
+                  </a>
+                )}
+              </article>
+            ))}
+            <article className="insight-card full-width">
+              <h4>Sinalização do caminho</h4>
+              <p className="insight-lead"><strong>Legenda:</strong> Direção Correta: Sentido Corumbá de Goiás -> Cidade de Goiás / Direção Inversa: Sentido Cidade de Goiás -> Corumbá de Goiás</p>
+              <div className="insight-images">
+                <img
+                  src="/insights/sinalizacao-scaled.png"
+                  alt="Sinalização oficial do Caminho de Cora Coralina"
+                  loading="lazy"
+                />
               </div>
+            </article>
+            <article className="insight-card full-width">
+              <h4>Preparação para caminhantes</h4>
+              <p className="insight-lead">Orientações para quem vai percorrer o caminho a pé.</p>
+              <div className="insight-prep-grid">
+                <div className="insight-prep-block">
+                  <h5>Duração estimada</h5>
+                  <p>{prepCaminhantes.duration}</p>
+                  <h5>Destaques</h5>
+                  <ul className="insight-prep-list">
+                    {prepCaminhantes.highlights.map(item => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="insight-prep-block">
+                  <h5>Planejamento essencial</h5>
+                  <ul className="insight-prep-list">
+                    {prepCaminhantes.planejamento.map(item => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="insight-prep-block">
+                  <h5>Checklist básico</h5>
+                  <ul className="insight-prep-list">
+                    {prepCaminhantes.checklist.map(item => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="insight-prep-block">
+                  <h5>Cuidados pessoais</h5>
+                  <ul className="insight-prep-list">
+                    {prepCaminhantes.cuidados.map(item => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                  <h5>Atenção</h5>
+                  <ul className="insight-prep-list">
+                    {prepCaminhantes.atencao.map(item => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </article>
+
+            <article className="insight-card full-width">
+              <h4>Preparação para ciclistas</h4>
+              <p className="insight-lead">Informações para quem vai percorrer o caminho pedalando.</p>
+              <div className="insight-prep-grid">
+                <div className="insight-prep-block">
+                  <h5>Duração estimada</h5>
+                  <p>{prepCiclistas.duration}</p>
+                  <h5>Destaques</h5>
+                  <ul className="insight-prep-list">
+                    {prepCiclistas.highlights.map(item => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="insight-prep-block">
+                  <h5>Planejamento essencial</h5>
+                  <ul className="insight-prep-list">
+                    {prepCiclistas.planejamento.map(item => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="insight-prep-block">
+                  <h5>Checklist da bike</h5>
+                  <ul className="insight-prep-list">
+                    {prepCiclistas.checklist.map(item => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="insight-prep-block">
+                  <h5>Cuidados pessoais</h5>
+                  <ul className="insight-prep-list">
+                    {prepCiclistas.cuidados.map(item => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                  <h5>Atenção</h5>
+                  <ul className="insight-prep-list">
+                    {prepCiclistas.atencao.map(item => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </article>
+
+            <div className="insight-row">
+              <article className="insight-card span-two signal-card">
+                <h4>Sinal de telefone e internet</h4>
+                <div className="insight-images signal-image">
+                  <img
+                    src="/insights/SinalCelularInternet.png"
+                    alt="Sinal de telefone e internet"
+                    loading="lazy"
+                  />
+                </div>
+                <p className="insight-lead">{sinalTelefoneInfo.resumo}</p>
+                <h5 className="insight-subtitle">Cobertura e operadoras</h5>
+                <ul className="insight-list">
+                  {sinalTelefoneInfo.destaques.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+                <h5 className="insight-subtitle">Dicas praticas</h5>
+                <ul className="insight-list">
+                  {sinalTelefoneInfo.dicas.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </article>
+              <article className="insight-card span-one">
+                <h4>Mapa completo e altimetria</h4>
+                <div className="insight-images map-images">
+                  <img src="/insights/MapaCaminho.png" alt="Mapa completo do Caminho" loading="lazy" />
+                  <img src="/insights/MapaCaminho-Altimetria.png" alt="Altimetria do Caminho" loading="lazy" />
+                </div>
+                <p className="insight-lead">Veja o mapa completo com fotos de pontos importantes e perfil altimétrico do percurso.</p>
+                <a className="insight-link" href="/insights/Mapa-CCC.pdf" target="_blank" rel="noreferrer">
+                  Abrir PDF do mapa
+                </a>
+              </article>
             </div>
+            <article className="insight-card full-width">
+              <h4>Telefones úteis</h4>
+              <p className="insight-lead">{telefonesUteis.aviso}</p>
+              <div className="insight-phones">
+                {telefonesUteis.grupos.map((grupo) => (
+                  <div className="insight-phone" key={grupo.empresa}>
+                    <h5>{grupo.empresa}</h5>
+                    <ul className="insight-phone-routes">
+                      {grupo.rotas.map((rota) => (
+                        <li key={rota}>{rota}</li>
+                      ))}
+                    </ul>
+                    <p><strong>Contato:</strong> {grupo.contato}</p>
+                    {grupo.site && (
+                      <a className="insight-link" href={grupo.site} target="_blank" rel="noreferrer">
+                        Site da empresa
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <a className="insight-link" href={telefonesUteis.fonte} target="_blank" rel="noreferrer">
+                Ver pagina completa de telefones
+              </a>
+            </article>
           </div>
         </section>
       </div>
+      <footer className="dashboard-footer">
+        <p>Caminho de Cora &#169; 2026 - Dashboards</p>
+      </footer>
       </DashboardLayout>
     </>
   );

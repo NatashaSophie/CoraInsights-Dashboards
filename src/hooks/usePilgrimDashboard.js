@@ -170,6 +170,7 @@ export function usePilgrimDashboard() {
     data,
     kpiData,
     routeProgress: data?.routeProgress || [],
+    routeHistory: data?.routeHistory || [],
     trailParts: data?.trailParts || [],
     allCheckpoints: data?.allCheckpoints || [],
     timePerRoute: data?.timePerRoute || [],
