@@ -10,6 +10,9 @@ export function useManagerDashboard(startDate = null, endDate = null) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [reloadToken, setReloadToken] = useState(0);
+
+  const refresh = () => setReloadToken(prev => prev + 1);
 
   useEffect(() => {
     async function loadData() {
@@ -27,15 +30,15 @@ export function useManagerDashboard(startDate = null, endDate = null) {
     }
 
     loadData();
-  }, [startDate, endDate]);
+  }, [startDate, endDate, reloadToken]);
 
   // Dados formatados para KPIs
   const kpiData = data ? {
-    totalUsers: data.users?.reduce((sum, u) => sum + u.count, 0) || 0,
+    totalUsers: data.totalPilgrims || 0,
     totalTrails: data.trails?.total || 0,
     publishedTrails: data.trails?.published || 0,
-    completionRate: data.completionRate?.percentage || 0,
-    activeUsers: data.activeUsers?.count || 0
+    completionRate: data.completionStats?.percentage || 0,
+    activeUsers: data.activeRoutes?.count || 0
   } : null;
 
   return {
@@ -45,9 +48,20 @@ export function useManagerDashboard(startDate = null, endDate = null) {
     trails: data?.trails || {},
     topTrails: data?.topTrails || [],
     activity: data?.activity || [],
-    completionRate: data?.completionRate || {},
-    activeUsers: data?.activeUsers || {},
+    directionStats: data?.directionStats || {},
+    modalityStats: data?.modalityStats || {},
+    completionRate: data?.completionStats || {},
+    activeUsers: data?.activeRoutes || {},
+    trailParts: data?.trailParts || [],
+    checkpoints: data?.checkpoints || [],
+    establishments: data?.establishments || [],
+    merchants: data?.merchants || [],
+    segmentsWithEstablishments: data?.segmentsWithEstablishments || [],
+    segmentCompletions: data?.segmentCompletions || [],
+    monthlyRegistrations: data?.monthlyRegistrations || {},
+    pilgrimStats: data?.pilgrimStats || {},
     loading,
-    error
+    error,
+    refresh
   };
 }
