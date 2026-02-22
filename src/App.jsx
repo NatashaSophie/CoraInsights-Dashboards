@@ -10,7 +10,7 @@ import DashboardPublic from './pages/DashboardPublic';
 import { DashboardPilgrim } from './pages/DashboardPilgrim';
 import { DashboardManager } from './pages/DashboardManager';
 import { DashboardMerchant } from './pages/DashboardMerchant';
-import { PerfilPage } from './pages/PerfilPage';
+import { ProfilePage } from './pages/ProfilePage';
 import './App.css';
 
 function AppContent() {
@@ -59,7 +59,7 @@ function AppContent() {
         />
 
         {/* Rotas protegidas - Perfil */}
-        <Route path="/perfil" element={user ? <PerfilPage /> : <Navigate to="/login" />} />
+        <Route path="/perfil" element={user ? <ProfilePage /> : <Navigate to="/login" />} />
 
         {/* Rota padrão */}
         <Route path="*" element={<Navigate to="/" />} />

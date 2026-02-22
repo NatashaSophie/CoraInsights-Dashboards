@@ -81,9 +81,14 @@ export function AuthProvider({ children }) {
       const userData = {
         username: data.user.email || data.user.username,
         userType: mapUserTypeToId(data.user.userType), // Mapear para número
-        name: data.user.username || data.user.email,
+        name: data.user.name || data.user.username || data.user.email,
+        nickname: data.user.nickname || '',
+        birthdate: data.user.birthdate || '',
+        sex: data.user.sex || '',
+        blocked: Boolean(data.user.blocked),
         id: data.user.id,
-        jwt: data.jwt
+        jwt: data.jwt,
+        email: data.user.email || ''
       };
 
       setUser(userData);
@@ -108,8 +113,16 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('jwt');
   };
 
+  const updateUser = (updates) => {
+    setUser(prev => {
+      const next = { ...(prev || {}), ...(updates || {}) };
+      localStorage.setItem('user', JSON.stringify(next));
+      return next;
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -150,6 +150,7 @@ section h2 {
 
 .chart-card.map-card {
   padding: 20px;
+  min-height: 620px;
 }
 
 .chart-card h3 {

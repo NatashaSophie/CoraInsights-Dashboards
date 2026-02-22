@@ -31,7 +31,7 @@ Todas as páginas autenticadas agora possuem:
 1. `PeregrinoPage.jsx` - Dashboard do Peregrino
 2. `GestorPage.jsx` - Dashboard do Gestor
 3. `ComerciandatePage.jsx` - Dashboard do Comerciante
-4. `PerfilPage.jsx` - Página do Perfil
+4. `ProfilePage.jsx` - Página do Perfil
 
 ## 📁 Arquivos Criados/Modificados
 
@@ -51,7 +51,7 @@ src/
     ├── PeregrinoPage.jsx (adicionado AuthenticatedNavigation)
     ├── GestorPage.jsx (adicionado AuthenticatedNavigation)
     ├── ComerciandatePage.jsx (adicionado AuthenticatedNavigation)
-    └── PerfilPage.jsx (adicionado AuthenticatedNavigation + correção isMerchant)
+    └── ProfilePage.jsx (adicionado AuthenticatedNavigation + correção isMerchant)
 ```
 
 ## 🔧 Detalhes Técnicos
