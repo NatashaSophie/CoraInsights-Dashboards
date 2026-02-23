@@ -144,6 +144,7 @@ section h2 {
   color: #333;
 }
 
+
 .analysis-card.placeholder .placeholder-content {
   min-height: 280px;
   background: linear-gradient(135deg, #f5f7fa 0%, #e1e8ed 100%);
@@ -256,6 +257,11 @@ section h2 {
   color: #721c24;
 }
 
+.badge.inactive {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+
 .badge.income {
   background: #d4edda;
   color: #155724;
@@ -332,6 +338,47 @@ section h2 {
 
 .form-message.success {
   color: #2e7d32;
+}
+
+.success-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 16px;
+}
+
+.success-modal {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.2);
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.success-modal-icon {
+  font-size: 32px;
+}
+
+.success-modal h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #1f2937;
+}
+
+.success-modal p {
+  margin: 0;
+  font-size: 14px;
+  color: #4b5563;
 }
 
 .segment-stats-grid {

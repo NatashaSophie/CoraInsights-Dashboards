@@ -38,10 +38,6 @@
 
 .profile-avatar {
   flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
 }
 
 .avatar-placeholder {
@@ -55,25 +51,6 @@
   font-size: 32px;
   font-weight: 700;
   color: white;
-}
-
-.avatar-image {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #e1e8ed;
-}
-
-.avatar-upload {
-  font-size: 12px;
-  font-weight: 600;
-  color: #4f46e5;
-  cursor: pointer;
-}
-
-.avatar-input {
-  display: none;
 }
 
 .profile-form {
@@ -530,11 +507,6 @@
 .badge.pending {
   background: #fff3cd;
   color: #856404;
-}
-
-.badge.rejected {
-  background: #f8d7da;
-  color: #721c24;
 }
 
 /* Toggle Switch */

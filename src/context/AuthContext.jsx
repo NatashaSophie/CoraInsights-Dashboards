@@ -86,6 +86,7 @@ export function AuthProvider({ children }) {
         birthdate: data.user.birthdate || '',
         sex: data.user.sex || '',
         blocked: Boolean(data.user.blocked),
+        merchantApproved: data.user.merchantApproved ?? null,
         id: data.user.id,
         jwt: data.jwt,
         email: data.user.email || ''

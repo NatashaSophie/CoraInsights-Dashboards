@@ -1,7 +1,7 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -32,14 +32,17 @@ const API_URL = 'http://localhost:1337';
 const styles = {
   page: {
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #f5f0e8 0%, #faf7f2 50%, #efe8dc 100%)',
+    background: 'linear-gradient(135deg, #f4f6fb 0%, #fbfcff 50%, #eef1f9 100%)',
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
   },
   header: {
     background: 'linear-gradient(135deg, #5d4037 0%, #6d4c41 50%, #795548 100%)',
     color: 'white',
     padding: '24px 0',
-    boxShadow: '0 4px 20px rgba(93, 64, 55, 0.3)'
+    boxShadow: '0 4px 20px rgba(59, 130, 246, 0.3)',
+    position: 'sticky',
+    top: '64px',
+    zIndex: 900
   },
   headerContent: {
     maxWidth: '1200px',
@@ -79,27 +82,34 @@ const styles = {
   statCard: {
     borderRadius: '16px',
     padding: '24px',
-    color: 'white',
-    boxShadow: '0 8px 32px rgba(93, 64, 55, 0.15)',
+    color: '#1f2937',
+    background: '#ffffff',
+    boxShadow: '0 10px 24px rgba(15, 23, 42, 0.08)',
+    border: '1px solid #e5e7eb',
+    borderLeft: '6px solid #6366f1',
     position: 'relative',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px'
   },
-  statCardIcon: { fontSize: '36px', marginBottom: '8px' },
-  statCardLabel: { fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.9 },
-  statCardValue: { fontSize: '36px', fontWeight: 'bold', margin: '8px 0' },
-  statCardSubtitle: { fontSize: '13px', opacity: 0.85 },
+  statCardIcon: { fontSize: '34px', lineHeight: 1 },
+  statCardContent: { display: 'flex', flexDirection: 'column', gap: '6px' },
+  statCardLabel: { fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: '#6b7280' },
+  statCardValue: { fontSize: '32px', fontWeight: '700', color: '#111827' },
+  statCardSubtitle: { fontSize: '13px', color: '#6b7280' },
   sectionTitle: {
-    fontSize: '22px',
-    fontWeight: 'bold',
-    color: '#4e342e',
-    marginBottom: '20px',
+    fontSize: '20px',
+    color: '#333',
+    margin: '0 0 20px 0',
+    fontWeight: 600,
     display: 'flex',
     alignItems: 'center',
     gap: '12px'
   },
   sectionIcon: {
-    background: '#efebe9',
-    color: '#6d4c41',
+    background: '#e0e7ff',
+    color: '#4338ca',
     padding: '10px',
     borderRadius: '10px',
     fontSize: '20px'
@@ -111,77 +121,75 @@ const styles = {
     marginBottom: '32px'
   },
   chartCard: {
-    background: '#fffcf8',
-    borderRadius: '16px',
-    boxShadow: '0 4px 20px rgba(93, 64, 55, 0.08)',
+    background: '#ffffff',
+    borderRadius: '18px',
+    boxShadow: '0 12px 24px rgba(15, 23, 42, 0.06)',
     overflow: 'hidden',
-    border: '1px solid #e8e0d5'
+    border: '1px solid #e5e7eb'
   },
   chartCardHeader: {
-    padding: '20px 24px',
-    borderBottom: '1px solid #e8e0d5',
-    background: 'linear-gradient(to right, #f5f0e8, #fffcf8)'
+    padding: '18px 24px',
+
   },
-  chartCardTitle: { fontSize: '16px', fontWeight: '600', color: '#4e342e', margin: 0 },
-  chartCardSubtitle: { fontSize: '13px', color: '#8d6e63', marginTop: '4px' },
-  chartCardBody: { padding: '24px' },
+  chartCardTitle: { fontSize: '18px', fontWeight: '600', color: '#2d3748', margin: 0 },
+  chartCardSubtitle: { fontSize: '13px', color: '#7a8699', marginTop: '6px' },
+  chartCardBody: { padding: '20px 24px' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: '14px' },
-  tableHeader: { background: 'linear-gradient(135deg, #5d4037 0%, #6d4c41 100%)', color: 'white' },
-  th: { padding: '16px 12px', textAlign: 'left', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' },
-  td: { padding: '16px 12px', borderBottom: '1px solid #e8e0d5' },
+  tableHeader: { background: '#f5f7fa', color: '#666' },
+  th: { padding: '16px 12px', textAlign: 'left', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#666' },
+  td: { padding: '16px 12px', borderBottom: '1px solid #e5e7eb' },
   avatar: {
     width: '40px',
     height: '40px',
     borderRadius: '50%',
-    background: 'linear-gradient(135deg, #8d6e63, #a1887f)',
+    background: 'linear-gradient(135deg, #f5f7fa, #f5f7fa)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: 'white',
+    color: '#9ca3af',
     fontWeight: 'bold',
     fontSize: '16px'
   },
   badge: { display: 'inline-block', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600' },
   legend: {
     marginBottom: '16px',
-    color: '#6d4c41',
+    color: '#475569',
     fontSize: '12px',
     display: 'flex',
     gap: '12px',
     flexWrap: 'wrap'
   },
   pointsBadge: {
-    background: 'linear-gradient(135deg, #5d4037, #6d4c41)',
-    color: 'white',
+    background: '#f3f4f6',
+    color: '#9ca3af',
     padding: '6px 14px',
     borderRadius: '20px',
-    fontWeight: 'bold'
+    fontWeight: '600'
   },
-  footer: { textAlign: 'center', padding: '32px', color: '#a1887f', fontSize: '14px' },
+  footer: { textAlign: 'center', padding: '32px', color: '#64748b', fontSize: '14px' },
   loading: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #f5f0e8 0%, #faf7f2 100%)'
+    background: 'linear-gradient(135deg, #f4f6fb 0%, #fbfcff 100%)'
   },
   spinner: {
     width: '50px',
     height: '50px',
-    border: '4px solid #e8e0d5',
-    borderTop: '4px solid #8d6e63',
+    border: '4px solid #e2e8f0',
+    borderTop: '4px solid #6366f1',
     borderRadius: '50%',
     animation: 'spin 1s linear infinite'
   }
 };
 
-// Paleta sóbria: apenas tons de marrom
 const gradients = {
-  brownDark: 'linear-gradient(135deg, #3e2723 0%, #4e342e 100%)',
-  brown: 'linear-gradient(135deg, #5d4037 0%, #6d4c41 100%)',
-  brownMedium: 'linear-gradient(135deg, #6d4c41 0%, #795548 100%)',
-  sienna: 'linear-gradient(135deg, #8d6e63 0%, #a1887f 100%)'
+  blueDark: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)',
+  blue: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+  blueMedium: 'linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)',
+  teal: 'linear-gradient(135deg, #0ea5e9 0%, #14b8a6 100%)'
 };
 
 function DashboardPublic({ hidePublicNav = false, hidePublicHeader = false }) {
@@ -190,7 +198,9 @@ function DashboardPublic({ hidePublicNav = false, hidePublicHeader = false }) {
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -220,7 +230,19 @@ function DashboardPublic({ hidePublicNav = false, hidePublicHeader = false }) {
       <div style={{ ...styles.loading, background: '#fff3e0' }}>
         <div style={{ fontSize: '60px' }}>&#9888;</div>
         <p style={{ color: '#e65100', fontSize: '18px', marginTop: '16px' }}>{error}</p>
-        <button onClick={fetchData} style={{ marginTop: '16px', padding: '12px 24px', background: '#e65100', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px' }}>
+        <button
+          onClick={fetchData}
+          style={{
+            marginTop: '16px',
+            padding: '12px 24px',
+            background: '#e65100',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+        >
           Tentar Novamente
         </button>
       </div>
@@ -235,7 +257,7 @@ function DashboardPublic({ hidePublicNav = false, hidePublicHeader = false }) {
     if (!monthStr) return '';
     const [year, month] = monthStr.split('-');
     const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    return months[parseInt(month) - 1] + '/' + year.slice(2);
+    return months[parseInt(month, 10) - 1] + '/' + year.slice(2);
   };
 
   const formatTime = (hours) => {
@@ -245,133 +267,179 @@ function DashboardPublic({ hidePublicNav = false, hidePublicHeader = false }) {
     return h > 0 ? h + 'h' + (m > 0 ? m + 'min' : '') : m + 'min';
   };
 
-  const monthlyDataChart = {
-    labels: (data.monthlyData || []).map(d => formatMonth(d.month)),
-    datasets: [{
-      label: 'Novos Cadastros',
-      data: (data.monthlyData || []).map(d => d.signups),
-      borderColor: '#8d6e63',
-      backgroundColor: 'rgba(141, 110, 99, 0.15)',
-      tension: 0.4,
-      fill: true,
-      pointBackgroundColor: '#6d4c41',
-      pointBorderColor: '#fff',
-      pointBorderWidth: 2,
-      pointRadius: 5
-    }]
-  };
-
-  // Cores sóbrias para as linhas do gráfico de incidência (tons de marrom)
   const lineColors = [
-    '#d7ccc8', '#bcaaa4', '#a1887f', '#8d6e63', '#795548', 
-    '#6d4c41', '#5d4037', '#4e342e', '#3e2723', '#5d4037', 
-    '#6d4c41', '#795548', '#3e2723'  // 13 = marrom muito escuro (Caminho Completo)
+    '#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#6A3D9A',
+    '#8C564B', '#E377C2', '#7F7F7F', '#B8860B', '#17BECF',
+    '#FF1493', '#003F5C', '#A3E635'
   ];
 
   const completionsByMonthData = data.completionsByMonth || { months: [], series: [] };
   const completionsByMonthChart = {
     labels: (completionsByMonthData.months || []).map(m => formatMonth(m)),
-    datasets: (completionsByMonthData.series || []).map((s, i) => ({
-      label: s.label,
-      data: s.data,
-      borderColor: s.routeCount === 13 ? '#4e342e' : lineColors[s.routeCount - 1] || '#a1887f',
-      backgroundColor: 'transparent',
-      tension: 0.3,
-      fill: false,
-      pointBackgroundColor: s.routeCount === 13 ? '#4e342e' : lineColors[s.routeCount - 1] || '#a1887f',
-      pointBorderColor: '#fffcf8',
-      pointBorderWidth: 1,
-      pointRadius: 3,
-      borderWidth: s.routeCount === 13 ? 3 : 2
-    }))
+    datasets: (completionsByMonthData.series || []).map((series, index) => {
+      const routeIndex = Number(series.routeCount ?? series.route ?? index + 1);
+      const color = routeIndex === 13 ? '#EDC948' : (lineColors[routeIndex - 1] || lineColors[index % lineColors.length]);
+      return {
+        label: series.label,
+        data: series.data,
+        borderColor: color,
+        backgroundColor: 'transparent',
+        tension: 0.3,
+        fill: false,
+        pointBackgroundColor: color,
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 1,
+        pointRadius: 3,
+        borderWidth: series.routeCount === 13 ? 3 : 2
+      };
+    })
   };
 
-  const pedestreParts = data.partsCompletionDataPedestre || [];
-  const bicicletaParts = data.partsCompletionDataBicicleta || [];
+  const pedestreAvgParts = data.partsCompletionDataPedestre
+    || data.avgTimeByRoutePedestre
+    || [];
+  const bicicletaAvgParts = data.partsCompletionDataBicicleta
+    || data.avgTimeByRouteBicicleta
+    || [];
 
   const avgTimeByRoutePedestreChart = {
-    labels: pedestreParts.map(p => String(p.id)),
+    labels: pedestreAvgParts.map(p => String(p.id)),
     datasets: [{
       label: 'Tempo Medio (horas)',
-      data: pedestreParts.map(p => p.avgTimeHours || 0),
-      backgroundColor: '#5d4037',
+      data: pedestreAvgParts.map(p => p.avgTimeHours || 0),
+      backgroundColor: '#2d9cdb',
       borderRadius: 6
     }]
   };
 
   const avgTimeByRouteBicicletaChart = {
-    labels: bicicletaParts.map(p => String(p.id)),
+    labels: bicicletaAvgParts.map(p => String(p.id)),
     datasets: [{
       label: 'Tempo Medio (horas)',
-      data: bicicletaParts.map(p => p.avgTimeHours || 0),
-      backgroundColor: '#8d6e63',
+      data: bicicletaAvgParts.map(p => p.avgTimeHours || 0),
+      backgroundColor: '#00b894',
       borderRadius: 6
     }]
   };
 
-  const pedestreCountMap = pedestreParts.reduce((acc, part) => {
-    acc[String(part.id)] = part.completions || 0;
-    return acc;
-  }, {});
-  const bicicletaCountMap = bicicletaParts.reduce((acc, part) => {
-    acc[String(part.id)] = part.completions || 0;
-    return acc;
-  }, {});
+  const partsCompletionData = data.partsCompletionData || [];
+  const avgTimePartsData = Array.isArray(data.avgTimePerTrecho) ? data.avgTimePerTrecho : [];
+  const rawPartsData = partsCompletionData.length ? partsCompletionData : avgTimePartsData;
 
-  const partsCompletionChart = {
-    labels: (data.partsCompletionData || []).map(p => String(p.id)),
-    datasets: [
-      {
-        label: 'Caminhantes',
-        data: (data.partsCompletionData || []).map(p => pedestreCountMap[String(p.id)] || 0),
-        backgroundColor: '#5d4037',
-        borderRadius: 6
-      },
-      {
-        label: 'Ciclistas',
-        data: (data.partsCompletionData || []).map(p => bicicletaCountMap[String(p.id)] || 0),
-        backgroundColor: '#a1887f',
-        borderRadius: 6
-      }
-    ]
+  const getNumericValue = (value) => {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value))) {
+      return Number(value);
+    }
+    return null;
   };
 
-  const partsLegend = (data.partsCompletionData || []).map(p => ({
+  const getFirstNumeric = (source, keys) => {
+    for (const key of keys) {
+      const candidate = getNumericValue(source?.[key]);
+      if (candidate !== null) return candidate;
+    }
+    return 0;
+  };
+
+  const partsLegend = rawPartsData.map(p => ({
     id: p.id,
     name: p.name || 'Trecho ' + p.id
   }));
-  const partsNameMap = (data.partsCompletionData || []).reduce((acc, part) => {
+  const partsNameMap = rawPartsData.reduce((acc, part) => {
     acc[String(part.id)] = part.name || 'Trecho ' + part.id;
     return acc;
   }, {});
   const getPartName = (id) => partsNameMap[String(id)] || `Trecho ${id}`;
 
-  const top5 = (data.topPilgrims || []).slice(0, 5);
-  const topPilgrimsChart = {
-    labels: top5.map(p => p.nickname),
-    datasets: [{
-      label: 'Pontuacao',
-      data: top5.map(p => p.points),
-      backgroundColor: ['#3e2723', '#4e342e', '#5d4037', '#6d4c41', '#795548'],
-      borderColor: '#fffcf8',
-      borderWidth: 2,
-      borderRadius: 8
-    }]
-  };
+  const pedestreCountMap = rawPartsData.reduce((acc, part) => {
+    const count = part.pedestreCount ?? part.pedestre ?? part.walkers ?? 0;
+    acc[String(part.id)] = count;
+    return acc;
+  }, {});
+  const bicicletaCountMap = rawPartsData.reduce((acc, part) => {
+    const count = part.bicicletaCount ?? part.bicicleta ?? part.cyclists ?? 0;
+    acc[String(part.id)] = count;
+    return acc;
+  }, {});
 
-  // Cores sóbrias para status do caminho (apenas marrons)
-  const statusColors = ['#d7ccc8', '#bcaaa4', '#a1887f', '#8d6e63', '#795548', '#6d4c41', '#5d4037', '#4e342e', '#3e2723', '#5d4037', '#6d4c41', '#795548', '#4e342e'];
+  const pedestreTimeMap = rawPartsData.reduce((acc, part) => {
+    const time = getFirstNumeric(part, [
+      'avgTimePedestreHours',
+      'avgTimePedestre',
+      'avgTimePedestrian',
+      'avgTimeCaminhanteHours',
+      'avgTimeCaminhante',
+      'avgTimeWalkingHours',
+      'avgTimeWalking',
+      'avgTimeWalkers',
+      'avgTimeHours',
+      'avgTime'
+    ]);
+    acc[String(part.id)] = time;
+    return acc;
+  }, {});
+  const bicicletaTimeMap = rawPartsData.reduce((acc, part) => {
+    const time = getFirstNumeric(part, [
+      'avgTimeBicicletaHours',
+      'avgTimeBicicleta',
+      'avgTimeCyclist',
+      'avgTimeCiclistaHours',
+      'avgTimeCiclista',
+      'avgTimeCyclingHours',
+      'avgTimeCycling'
+    ]);
+    acc[String(part.id)] = time;
+    return acc;
+  }, {});
+
+  const pedestreParts = Array.isArray(data.avgTimeByRoutePedestre) ? data.avgTimeByRoutePedestre : [];
+  const bicicletaParts = Array.isArray(data.avgTimeByRouteBicicleta) ? data.avgTimeByRouteBicicleta : [];
+  pedestreParts.forEach(part => {
+    pedestreTimeMap[String(part.id)] = part.avgTimeHours || part.avgTime || 0;
+  });
+  bicicletaParts.forEach(part => {
+    bicicletaTimeMap[String(part.id)] = part.avgTimeHours || part.avgTime || 0;
+  });
+
+  const partsForChartFromMaps = Array.from(new Set([
+    ...Object.keys(pedestreTimeMap),
+    ...Object.keys(bicicletaTimeMap)
+  ])).filter((value) => value && value !== 'undefined' && value !== 'null');
+
+  const partsForChart = partsLegend.length
+    ? partsLegend.map(item => String(item.id))
+    : partsForChartFromMaps.length
+      ? partsForChartFromMaps
+      : Array.from(new Set([...pedestreParts, ...bicicletaParts]
+        .map(part => String(part.id))
+        .filter((value) => value && value !== 'undefined' && value !== 'null')));
+
+  const statusColors = [
+    '#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#6A3D9A',
+    '#8C564B', '#E377C2', '#7F7F7F', '#B8860B', '#17BECF',
+    '#FF1493', '#003F5C', '#A3E635'
+  ];
+  const statusCaminhoSorted = (data.statusCaminho || [])
+    .slice()
+    .sort((a, b) => {
+      const aId = Number(String(a.status).match(/\d+/)?.[0] ?? 0);
+      const bId = Number(String(b.status).match(/\d+/)?.[0] ?? 0);
+      return aId - bId;
+    });
+
   const statusCaminhoChart = {
-    labels: (data.statusCaminho || []).map(s => s.status),
+    labels: statusCaminhoSorted.map(s => s.status),
     datasets: [{
-      data: (data.statusCaminho || []).map(s => s.count),
-      backgroundColor: (data.statusCaminho || []).map((s, i) => {
-        if (s.status.includes('Completo')) return '#4e342e';
-        if (s.status.includes('Andamento')) return '#a1887f';
-        return statusColors[i % statusColors.length];
+      data: statusCaminhoSorted.map(s => s.count),
+      backgroundColor: statusCaminhoSorted.map((s, i) => {
+        if (s.status.includes('Completo')) return '#EDC948';
+        if (s.status.includes('Andamento')) return '#A05195';
+        const statusIndex = Number(String(s.status).match(/\d+/)?.[0] ?? 0);
+        return statusColors[statusIndex - 1] || statusColors[i % statusColors.length];
       }),
       borderWidth: 3,
-      borderColor: '#fffcf8'
+      borderColor: '#ffffff'
     }]
   };
 
@@ -380,37 +448,76 @@ function DashboardPublic({ hidePublicNav = false, hidePublicHeader = false }) {
     maintainAspectRatio: true,
     plugins: { legend: { display: false } },
     scales: {
-      y: { beginAtZero: true, grid: { color: 'rgba(93, 64, 55, 0.08)' }, ticks: { color: '#8d6e63' } },
-      x: { grid: { display: false }, ticks: { color: '#8d6e63' } }
+      y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.2)' }, ticks: { color: '#64748b' } },
+      x: { grid: { display: false }, ticks: { color: '#64748b' } }
     }
   };
+
+  const avgTimeFallbackChart = data.avgTimePerTrecho
+    && Array.isArray(data.avgTimePerTrecho.labels)
+    && Array.isArray(data.avgTimePerTrecho.datasets);
+
+  const isFallbackAvgTime = avgTimeFallbackChart && partsForChart.length === 0;
+
+  const avgTimePedestreChart = isFallbackAvgTime
+    ? data.avgTimePerTrecho
+    : {
+        labels: partsForChart,
+        datasets: [
+          {
+            label: 'Caminhantes',
+            data: partsForChart.map(id => pedestreTimeMap[id] || 0),
+            backgroundColor: '#93c5fd',
+            borderRadius: 6
+          }
+        ]
+      };
+
+  const avgTimeBicicletaChart = isFallbackAvgTime
+    ? data.avgTimePerTrecho
+    : {
+        labels: partsForChart,
+        datasets: [
+          {
+            label: 'Ciclistas',
+            data: partsForChart.map(id => bicicletaTimeMap[id] || 0),
+            backgroundColor: '#6366f1',
+            borderRadius: 6
+          }
+        ]
+      };
 
   const top10Pilgrims = (data.topPilgrims || []).slice(0, 10);
 
   return (
     <div style={styles.page}>
       <style>{String.raw`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      
+
       {!hidePublicNav && (
-        <nav style={{
-          background: 'white',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-          padding: '16px 40px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          position: 'sticky',
-          top: 0,
-          zIndex: 1000,
-          marginBottom: '8px'
-        }}>
-          <div style={{
-            fontSize: '18px',
-            fontWeight: '600',
-            color: '#3e2723',
-            cursor: 'pointer',
-            letterSpacing: '0.5px'
-          }} onClick={() => navigate('/')}>
+        <nav
+          style={{
+            background: 'white',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+            padding: '16px 40px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            position: 'sticky',
+            top: 0,
+            zIndex: 1000,
+            marginBottom: 0
+          }}
+        >
+          <div
+            style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#1f2937',
+              cursor: 'pointer',
+              letterSpacing: '0.5px'
+            }}
+            onClick={() => navigate('/')}
+          >
             Caminho de Cora - Dashboards
           </div>
           <div style={{ display: 'flex', gap: '32px' }}>
@@ -419,15 +526,15 @@ function DashboardPublic({ hidePublicNav = false, hidePublicHeader = false }) {
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#6d4c41',
+                color: '#64748b',
                 fontSize: '14px',
                 fontWeight: '500',
                 cursor: 'pointer',
                 padding: '8px 12px',
                 transition: 'color 0.3s ease'
               }}
-              onMouseEnter={(e) => e.target.style.color = '#4e342e'}
-              onMouseLeave={(e) => e.target.style.color = '#6d4c41'}
+              onMouseEnter={(e) => (e.target.style.color = '#1d4ed8')}
+              onMouseLeave={(e) => (e.target.style.color = '#64748b')}
             >
               Home
             </button>
@@ -436,22 +543,22 @@ function DashboardPublic({ hidePublicNav = false, hidePublicHeader = false }) {
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#6d4c41',
+                color: '#64748b',
                 fontSize: '14px',
                 fontWeight: '500',
                 cursor: 'pointer',
                 padding: '8px 12px',
                 transition: 'color 0.3s ease'
               }}
-              onMouseEnter={(e) => e.target.style.color = '#4e342e'}
-              onMouseLeave={(e) => e.target.style.color = '#6d4c41'}
+              onMouseEnter={(e) => (e.target.style.color = '#1d4ed8')}
+              onMouseLeave={(e) => (e.target.style.color = '#64748b')}
             >
               Login
             </button>
           </div>
         </nav>
       )}
-      
+
       {!hidePublicHeader && (
         <header style={styles.header}>
           <div style={styles.headerContent}>
@@ -466,62 +573,175 @@ function DashboardPublic({ hidePublicNav = false, hidePublicHeader = false }) {
 
       <main style={styles.main}>
         <div style={styles.cardsGrid}>
-          <div style={{ ...styles.statCard, background: gradients.brownDark }}>
-            <div style={{ ...styles.statCardIcon, filter: 'brightness(0) invert(1)', opacity: 0.9 }}>&#128694;</div>
-            <div style={styles.statCardLabel}>Total de Peregrinos</div>
-            <div style={styles.statCardValue}>{data.totalPilgrims}</div>
-            <div style={styles.statCardSubtitle}>{data.malePilgrims} masc. / {data.femalePilgrims} fem.</div>
+          <div style={{ ...styles.statCard, borderLeftColor: '#667eea' }}>
+            <div style={{ ...styles.statCardIcon, color: '#667eea' }}>&#128694;</div>
+            <div style={styles.statCardContent}>
+              <div style={styles.statCardLabel}>Total de Peregrinos Ativos</div>
+              <div style={styles.statCardValue}>{data.totalPilgrims}</div>
+              <div style={styles.statCardSubtitle}>
+                {data.malePilgrims} masc. / {data.femalePilgrims} fem.
+              </div>
+            </div>
           </div>
-          <div style={{ ...styles.statCard, background: gradients.brown }}>
-            <div style={{ ...styles.statCardIcon, filter: 'brightness(0) invert(1)', opacity: 0.9 }}>🛣️</div>
-            <div style={styles.statCardLabel}>Percursos Concluídos</div>
-            <div style={styles.statCardValue}>{data.completedTrails}</div>
-            <div style={styles.statCardSubtitle}>caminho completo ou parcial</div>
+          <div style={{ ...styles.statCard, borderLeftColor: '#667eea' }}>
+            <div style={{ ...styles.statCardIcon, color: '#667eea' }}>🛣️</div>
+            <div style={styles.statCardContent}>
+              <div style={styles.statCardLabel}>Percursos Concluídos</div>
+              <div style={styles.statCardValue}>{data.completedTrails}</div>
+              <div style={styles.statCardSubtitle}>caminho completo ou parcial</div>
+            </div>
           </div>
-          <div style={{ ...styles.statCard, background: gradients.brownMedium }}>
-            <div style={{ ...styles.statCardIcon, filter: 'brightness(0) invert(1)', opacity: 0.9 }}>&#128099;</div>
-            <div style={styles.statCardLabel}>Percursos Ativos</div>
-            <div style={styles.statCardValue}>{data.activeTrails}</div>
-            <div style={styles.statCardSubtitle}>em andamento</div>
+          <div style={{ ...styles.statCard, borderLeftColor: '#667eea' }}>
+            <div style={{ ...styles.statCardIcon, color: '#667eea' }}>&#128099;</div>
+            <div style={styles.statCardContent}>
+              <div style={styles.statCardLabel}>Percursos Ativos</div>
+              <div style={styles.statCardValue}>{data.activeTrails}</div>
+              <div style={styles.statCardSubtitle}>em andamento</div>
+            </div>
           </div>
-          <div style={{ ...styles.statCard, background: gradients.sienna }}>
-            <div style={{ ...styles.statCardIcon, filter: 'brightness(0) invert(1)', opacity: 0.9 }}>&#127942;</div>
-            <div style={styles.statCardLabel}>Caminho Completo</div>
-            <div style={styles.statCardValue}>{data.caminhoCompleto || 0}</div>
-            <div style={styles.statCardSubtitle}>peregrinos com 13 trechos</div>
+          <div style={{ ...styles.statCard, borderLeftColor: '#667eea' }}>
+            <div style={{ ...styles.statCardIcon, color: '#667eea' }}>&#127942;</div>
+            <div style={styles.statCardContent}>
+              <div style={styles.statCardLabel}>Caminho Completo</div>
+              <div style={styles.statCardValue}>{data.caminhoCompleto || 0}</div>
+              <div style={styles.statCardSubtitle}>13 trechos concluídos em sequência</div>
+            </div>
           </div>
         </div>
 
         <div style={styles.sectionTitle}>
-          <span style={styles.sectionIcon}>&#128202;</span>
+          Ranking Detalhado
+        </div>
+
+        <div style={{ ...styles.chartCard, marginBottom: '32px' }}>
+          <div style={styles.chartCardBody}>
+            <p style={{ color: '#64748b', marginBottom: '12px', fontSize: '13px' }}>
+                <strong>Legenda:</strong> Modalidade: C = Caminhada | B = Bicicleta -- Sexo: M = Masculino | F = Feminino -- Percursos: Quantidade de Percusos Concluídos (caminho completo ou parcial) -- Trechos: Quantidade de Trechos Concluídos nos percursos
+            </p>
+            <p style={{ color: '#64748b', marginBottom: '12px', fontSize: '13px' }}>
+                <strong>Cálculo da Pontuação:</strong> 10 pts/km + 500 pts/percurso + 1000 pts (cada caminho completado)
+            </p>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={styles.table}>
+                <thead style={styles.tableHeader}>
+                  <tr>
+                    <th style={styles.th}>#</th>
+                    <th style={styles.th}>Peregrino</th>
+                    <th style={{ ...styles.th, textAlign: 'center' }}>Idade</th>
+                    <th style={{ ...styles.th, textAlign: 'center' }}>Sexo</th>
+                    <th style={{ ...styles.th, textAlign: 'center' }}>Modalidade</th>
+                    <th style={{ ...styles.th, textAlign: 'center' }}>Percursos</th>
+                    <th style={{ ...styles.th, textAlign: 'center' }}>Trechos</th>
+                    <th style={{ ...styles.th, textAlign: 'right' }}>Distância</th>
+                    <th style={{ ...styles.th, textAlign: 'right' }}>Tempo</th>
+                    <th style={{ ...styles.th, textAlign: 'right' }}>Vel. média</th>
+                    <th style={{ ...styles.th, textAlign: 'right' }}>Pontuação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {top10Pilgrims.map((pilgrim, index) => (
+                    <tr
+                      key={index}
+                      style={{
+                        background:
+                          index === 0 ? '#fff7cc' : index === 1 ? '#f2f4f8' : index === 2 ? '#f8efe3' : '#ffffff'
+                      }}
+                    >
+                      <td style={styles.td}>
+                        <span style={{ fontSize: '14px', color: '#666' }}>
+                          {pilgrim.rank === 1
+                            ? String.fromCodePoint(129351)
+                            : pilgrim.rank === 2
+                              ? String.fromCodePoint(129352)
+                              : pilgrim.rank === 3
+                                ? String.fromCodePoint(129353)
+                                : pilgrim.rank}
+                        </span>
+                      </td>
+                      <td style={styles.td}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={styles.avatar}>{pilgrim.nickname.charAt(0).toUpperCase()}</div>
+                          <span style={{ fontWeight: '600', color: '#666' }}>{pilgrim.nickname}</span>
+                        </div>
+                      </td>
+                      <td style={{ ...styles.td, textAlign: 'center', color: '#475569' }}>{pilgrim.age} anos</td>
+                      <td style={{ ...styles.td, textAlign: 'center' }}>
+                        <span
+                          style={{
+                            ...styles.badge,
+                            background: pilgrim.sex === 'M' ? '#e0e7ff' : pilgrim.sex === 'F' ? '#dbeafe' : '#eef2ff',
+                            color: '#666'
+                          }}
+                        >
+                          {pilgrim.sex}
+                        </span>
+                      </td>
+                      <td style={{ ...styles.td, textAlign: 'center' }}>
+                        {(() => {
+                          const seq = Array.isArray(pilgrim.modalitySequence) && pilgrim.modalitySequence.length > 0
+                            ? pilgrim.modalitySequence.join(' | ')
+                            : pilgrim.modality || '-';
+                          const base = seq.includes('B') && !seq.includes('C') ? 'B' : seq.includes('C') && !seq.includes('B') ? 'C' : '-';
+                          return (
+                            <span
+                              style={{
+                                ...styles.badge,
+                                background: base === 'C' ? '#e0e7ff' : base === 'B' ? '#dbeafe' : '#eef2ff',
+                                color: '#666'
+                              }}
+                            >
+                              {seq}
+                            </span>
+                          );
+                        })()}
+                      </td>
+                      <td style={{ ...styles.td, textAlign: 'center' }}>
+                        <span style={{ ...styles.badge, background: '#e0e7ff', color: '#666' }}>{pilgrim.trails}</span>
+                      </td>
+                      <td style={{ ...styles.td, textAlign: 'center' }}>
+                        <span style={{ ...styles.badge, background: '#dbeafe', color: '#666' }}>{pilgrim.routes}</span>
+                      </td>
+                      <td style={{ ...styles.td, textAlign: 'right', fontWeight: '500' }}>
+                        <span style={{ color: '#666' }}>{pilgrim.distance.toLocaleString('pt-BR')} km</span>
+                      </td>
+                      <td style={{ ...styles.td, textAlign: 'right' }}>
+                        <span style={{ color: '#666' }}>{formatTime(pilgrim.totalHours)}</span>
+                      </td>
+                      <td style={{ ...styles.td, textAlign: 'right' }}>
+                        {pilgrim.averageSpeed > 0 ? <span style={{ color: '#666' }}>{pilgrim.averageSpeed.toFixed(1) + ' km/h'}</span> : '-'}
+                      </td>
+                      <td style={{ ...styles.td, textAlign: 'right' }}>
+                        <span style={styles.pointsBadge}>{pilgrim.points.toLocaleString('pt-BR')}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+
+          </div>
+        </div>
+
+        <div style={styles.sectionTitle}>
           Análises e Estatísticas
         </div>
 
         <div style={styles.chartsGrid}>
           <div style={styles.chartCard}>
             <div style={styles.chartCardHeader}>
-              <h3 style={styles.chartCardTitle}>&#128200; Crescimento Mensal de Cadastros</h3>
-              <p style={styles.chartCardSubtitle}>Novos peregrinos cadastrados por mês</p>
-            </div>
-            <div style={styles.chartCardBody}>
-              <Line data={monthlyDataChart} options={chartOptions} />
-            </div>
-          </div>
-
-          <div style={styles.chartCard}>
-            <div style={styles.chartCardHeader}>
-              <h3 style={styles.chartCardTitle}>&#127919; Status do Caminho</h3>
+              <h3 style={styles.chartCardTitle}>Status do Caminho</h3>
               <p style={styles.chartCardSubtitle}>Distribuição por trechos completados</p>
             </div>
             <div style={{ ...styles.chartCardBody, display: 'flex', justifyContent: 'center' }}>
               <div style={{ maxWidth: '280px' }}>
-                <Doughnut 
-                  data={statusCaminhoChart} 
+                <Doughnut
+                  data={statusCaminhoChart}
                   options={{
                     responsive: true,
                     cutout: '60%',
                     plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } } }
-                  }} 
+                  }}
                 />
               </div>
             </div>
@@ -529,89 +749,18 @@ function DashboardPublic({ hidePublicNav = false, hidePublicHeader = false }) {
 
           <div style={styles.chartCard}>
             <div style={styles.chartCardHeader}>
-              <h3 style={styles.chartCardTitle}>&#128197; Período de Maior Incidência</h3>
+              <h3 style={styles.chartCardTitle}>Período de Maior Incidência</h3>
               <p style={styles.chartCardSubtitle}>Percursos concluídos (completos e parciais)</p>
             </div>
             <div style={styles.chartCardBody}>
-              <Line 
-                data={completionsByMonthChart} 
+              <Line
+                data={completionsByMonthChart}
                 options={{
                   ...chartOptions,
-                  plugins: { 
+                  plugins: {
                     legend: { display: true, position: 'top', labels: { boxWidth: 12, padding: 15 } }
                   }
-                }} 
-              />
-            </div>
-          </div>
-
-          <div style={styles.chartCard}>
-            <div style={styles.chartCardHeader}>
-              <h3 style={styles.chartCardTitle}>&#127942; Top 5 Peregrinos</h3>
-              <p style={styles.chartCardSubtitle}>Ranking por pontuação</p>
-            </div>
-            <div style={styles.chartCardBody}>
-              <Bar data={topPilgrimsChart} options={{ ...chartOptions, indexAxis: 'y' }} />
-            </div>
-          </div>
-        </div>
-
-        <div style={{ ...styles.chartsGrid, marginBottom: '32px' }}>
-          <div style={styles.chartCard}>
-            <div style={styles.chartCardHeader}>
-              <h3 style={styles.chartCardTitle}>&#9201; Tempo Médio (Pedestre)</h3>
-              <p style={styles.chartCardSubtitle}>Tempo médio em horas para completar cada um dos 13 trechos</p>
-            </div>
-            <div style={styles.chartCardBody}>
-              <Bar 
-                data={avgTimeByRoutePedestreChart} 
-                options={{
-                  ...chartOptions,
-                  plugins: {
-                    ...chartOptions.plugins,
-                    tooltip: {
-                      callbacks: {
-                        title: (items) => {
-                          const id = items?.[0]?.label;
-                          return getPartName(id);
-                        }
-                      }
-                    }
-                  },
-                  scales: {
-                    ...chartOptions.scales,
-                    x: { ...chartOptions.scales.x, ticks: { maxRotation: 45, minRotation: 45 } }
-                  }
-                }} 
-              />
-            </div>
-          </div>
-          <div style={styles.chartCard}>
-            <div style={styles.chartCardHeader}>
-              <h3 style={styles.chartCardTitle}>&#9201; Tempo Médio (Ciclista)</h3>
-              <p style={styles.chartCardSubtitle}>Tempo médio em horas para completar cada um dos 13 trechos</p>
-            </div>
-            <div style={styles.chartCardBody}>
-              <Bar 
-                data={avgTimeByRouteBicicletaChart} 
-                options={{
-                  ...chartOptions,
-                  plugins: {
-                    ...chartOptions.plugins,
-                    tooltip: {
-                      callbacks: {
-                        title: (items) => {
-                          const id = items?.[0]?.label;
-                          return getPartName(id);
-                        }
-                      }
-                    }
-                  },
-                  scales: {
-                    ...chartOptions.scales,
-                    x: { ...chartOptions.scales.x, ticks: { maxRotation: 45, minRotation: 45 } }
-                  }
-                }} 
+                }}
               />
             </div>
           </div>
@@ -619,51 +768,67 @@ function DashboardPublic({ hidePublicNav = false, hidePublicHeader = false }) {
 
         <div style={{ ...styles.chartCard, marginBottom: '32px' }}>
           <div style={styles.chartCardHeader}>
-            <h3 style={styles.chartCardTitle}>&#128506; Trechos do Caminho</h3>
-            <p style={styles.chartCardSubtitle}>Quantidade de conclusões por trecho</p>
+            <h3 style={styles.chartCardTitle}>Tempo Médio por Trecho</h3>
+            <p style={styles.chartCardSubtitle}>Tempo médio em horas para completar cada um dos 13 trechos</p>
           </div>
-          <div style={{ ...styles.chartCardBody, display: 'flex', gap: '24px' }}>
-            <div style={{ flex: 2, minWidth: 0 }}>
-              <Bar 
-                data={partsCompletionChart} 
-                options={{
-                  ...chartOptions,
-                  plugins: {
-                    ...chartOptions.plugins,
-                    tooltip: {
-                      mode: 'index',
-                      intersect: false,
-                      callbacks: {
-                        title: (items) => {
-                          const id = items?.[0]?.label;
-                          return getPartName(id);
-                        },
-                        beforeBody: (items) => {
-                          const id = items?.[0]?.label;
-                          const pedestre = pedestreCountMap[String(id)] || 0;
-                          const bicicleta = bicicletaCountMap[String(id)] || 0;
-                          const total = pedestre + bicicleta;
-                          return `Total: ${total}`;
-                        },
-                        label: (item) => {
-                          return `${item.dataset.label}: ${item.formattedValue}`;
+          <div style={{ ...styles.chartCardBody, display: 'flex', gap: '24px', alignItems: 'stretch' }}>
+            <div style={{ flex: 2, minWidth: 0, display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '24px', alignSelf: 'stretch' }}>
+              <div style={{ height: '320px', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ fontSize: '13px', color: '#7a8699' }}>Caminhantes</div>
+                <Bar
+                  data={avgTimeByRoutePedestreChart}
+                  options={{
+                    ...chartOptions,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      ...chartOptions.plugins,
+                      tooltip: {
+                        callbacks: {
+                          title: (items) => {
+                            const id = items?.[0]?.label;
+                            return getPartName(id);
+                          }
                         }
                       }
+                    },
+                    scales: {
+                      ...chartOptions.scales,
+                      x: { ...chartOptions.scales.x, ticks: { maxRotation: 45, minRotation: 45 } }
                     }
-                  },
-                  scales: {
-                    ...chartOptions.scales,
-                    x: { ...chartOptions.scales.x, stacked: true, ticks: { maxRotation: 0, minRotation: 0 } },
-                    y: { ...chartOptions.scales.y, stacked: true }
-                  }
-                }} 
-              />
+                  }}
+                />
+              </div>
+                <div style={{ height: '320px', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ fontSize: '13px', color: '#7a8699' }}>Ciclistas</div>
+                <Bar
+                  data={avgTimeByRouteBicicletaChart}
+                  options={{
+                      ...chartOptions,
+                      maintainAspectRatio: false,
+                    plugins: {
+                      ...chartOptions.plugins,
+                      tooltip: {
+                        callbacks: {
+                          title: (items) => {
+                            const id = items?.[0]?.label;
+                            return getPartName(id);
+                          }
+                        }
+                      }
+                    },
+                    scales: {
+                      ...chartOptions.scales,
+                      x: { ...chartOptions.scales.x, ticks: { maxRotation: 45, minRotation: 45 } }
+                    }
+                  }}
+                />
+              </div>
             </div>
-            <div style={{ flex: 1, fontSize: '12px', color: '#6d4c41' }}>
-              <div style={{ fontWeight: '600', marginBottom: '8px' }}>Legenda (ID - Trecho)</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px' }}>
+              <div style={{ flex: '0 0 260px', fontSize: '12px', color: '#475569', alignSelf: 'stretch', background: '#f3f4f6', borderRadius: '12px', padding: '8px', border: '1px solid #e5e7eb' }}>
+                <div style={{ fontWeight: '600', marginBottom: '8px' }}>Legenda (ID - Trecho)</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px' }}>
                 {partsLegend.map(item => (
-                  <div key={item.id}>
+                  <div key={item.id} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     <strong>{item.id}</strong> - {item.name}
                   </div>
                 ))}
@@ -671,104 +836,10 @@ function DashboardPublic({ hidePublicNav = false, hidePublicHeader = false }) {
             </div>
           </div>
         </div>
-
-        <div style={styles.sectionTitle}>
-          <span style={{ ...styles.sectionIcon, background: '#efebe9', color: '#5d4037' }}>&#127942;</span>
-          Ranking Detalhado
-        </div>
-        <p style={{ color: '#8d6e63', marginBottom: '20px', fontSize: '13px' }}>
-          <span style={{ background: '#efebe9', padding: '6px 12px', borderRadius: '20px' }}>
-            <strong>Pontuacao:</strong> 10 pts/km + 500 pts/percurso + 1000 pts (cada caminho completado)
-          </span>
-        </p>
-        <div style={styles.legend}>
-          <span style={{ background: '#efebe9', padding: '6px 12px', borderRadius: '20px' }}>
-            <strong>Legenda:</strong> Modalidade: C = Caminhada | B = Bicicleta -- Sexo: M = Masculino | F = Feminino -- Percursos: Percusos Concluídos -- Trechos: Trechos Concluídos</span>
-        </div>
-
-        <div style={styles.chartCard}>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={styles.table}>
-              <thead style={styles.tableHeader}>
-                <tr>
-                  <th style={styles.th}>#</th>
-                  <th style={styles.th}>Peregrino</th>
-                  <th style={{ ...styles.th, textAlign: 'center' }}>Idade</th>
-                  <th style={{ ...styles.th, textAlign: 'center' }}>Sexo</th>
-                  <th style={{ ...styles.th, textAlign: 'center' }}>Modalidade</th>
-                  <th style={{ ...styles.th, textAlign: 'center' }}>Percursos</th>
-                  <th style={{ ...styles.th, textAlign: 'center' }}>Trechos</th>
-                  <th style={{ ...styles.th, textAlign: 'right' }}>Distância</th>
-                  <th style={{ ...styles.th, textAlign: 'right' }}>Tempo</th>
-                  <th style={{ ...styles.th, textAlign: 'right' }}>Vel. média</th>
-                  <th style={{ ...styles.th, textAlign: 'right' }}>Pontuação</th>
-                </tr>
-              </thead>
-              <tbody>
-                {top10Pilgrims.map((pilgrim, index) => (
-                  <tr 
-                    key={index} 
-                    style={{ background: index === 0 ? '#efebe9' : index === 1 ? '#f5f0e8' : index === 2 ? '#fbe9e7' : '#fffcf8' }}
-                  >
-                    <td style={styles.td}>
-                      <span style={{ fontSize: '24px' }}>
-                        {pilgrim.rank === 1 ? String.fromCodePoint(129351) : pilgrim.rank === 2 ? String.fromCodePoint(129352) : pilgrim.rank === 3 ? String.fromCodePoint(129353) : pilgrim.rank}
-                      </span>
-                    </td>
-                    <td style={styles.td}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={styles.avatar}>{pilgrim.nickname.charAt(0).toUpperCase()}</div>
-                        <span style={{ fontWeight: '600', color: '#4e342e' }}>{pilgrim.nickname}</span>
-                      </div>
-                    </td>
-                    <td style={{ ...styles.td, textAlign: 'center', color: '#5d4037' }}>{pilgrim.age} anos</td>
-                    <td style={{ ...styles.td, textAlign: 'center' }}>
-                      <span style={{ ...styles.badge, background: pilgrim.sex === 'M' ? '#d7ccc8' : pilgrim.sex === 'F' ? '#efebe9' : '#f5f0e8', color: pilgrim.sex === 'M' ? '#5d4037' : pilgrim.sex === 'F' ? '#6d4c41' : '#795548' }}>
-                        {pilgrim.sex}
-                      </span>
-                    </td>
-                    <td style={{ ...styles.td, textAlign: 'center' }}>
-                      {(() => {
-                        const seq = Array.isArray(pilgrim.modalitySequence) && pilgrim.modalitySequence.length > 0
-                          ? pilgrim.modalitySequence.join(' | ')
-                          : (pilgrim.modality || '-');
-                        const base = seq.includes('B') && !seq.includes('C') ? 'B' : seq.includes('C') && !seq.includes('B') ? 'C' : '-';
-                        return (
-                      <span style={{ ...styles.badge, background: base === 'C' ? '#efebe9' : base === 'B' ? '#d7ccc8' : '#f5f0e8', color: base === 'C' ? '#5d4037' : base === 'B' ? '#4e342e' : '#795548' }}>
-                        {seq}
-                      </span>
-                        );
-                      })()}
-                    </td>
-                    <td style={{ ...styles.td, textAlign: 'center' }}>
-                      <span style={{ ...styles.badge, background: '#efebe9', color: '#5d4037' }}>{pilgrim.trails}</span>
-                    </td>
-                    <td style={{ ...styles.td, textAlign: 'center' }}>
-                      <span style={{ ...styles.badge, background: '#d7ccc8', color: '#4e342e' }}>{pilgrim.routes}</span>
-                    </td>
-                    <td style={{ ...styles.td, textAlign: 'right', fontWeight: '500' }}>
-                      {pilgrim.distance.toLocaleString('pt-BR')} km
-                    </td>
-                    <td style={{ ...styles.td, textAlign: 'right' }}>
-                      {formatTime(pilgrim.totalHours)}
-                    </td>
-                    <td style={{ ...styles.td, textAlign: 'right' }}>
-                      {pilgrim.averageSpeed > 0 ? pilgrim.averageSpeed.toFixed(1) + ' km/h' : '-'}
-                    </td>
-                    <td style={{ ...styles.td, textAlign: 'right' }}>
-                      <span style={styles.pointsBadge}>{pilgrim.points.toLocaleString('pt-BR')}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <footer style={styles.footer}>
-          <p>Caminho de Cora &#169; 2026 - Dashboards</p>
-        </footer>
       </main>
+      <footer className="dashboard-footer">
+        <p>Caminho de Cora &#169; 2026 - Dashboards</p>
+      </footer>
     </div>
   );
 }

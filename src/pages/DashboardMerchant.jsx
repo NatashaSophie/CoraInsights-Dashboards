@@ -57,7 +57,11 @@ export function DashboardMerchant() {
     locationY: ''
   });
   const [formStatus, setFormStatus] = useState({ loading: false, error: '', success: '' });
-  const isFormDisabled = !merchantId || formStatus.loading;
+  const merchantApproval = user?.merchantApproved ?? null;
+  const isMerchantApproved = merchantApproval === true;
+  const isMerchantRejected = merchantApproval === false;
+  const isMerchantBlocked = !isMerchantApproved;
+  const isFormDisabled = !merchantId || formStatus.loading || isMerchantBlocked;
   const [yearVisibility, setYearVisibility] = useState({});
   const [showForm, setShowForm] = useState(false);
 
@@ -86,13 +90,14 @@ export function DashboardMerchant() {
 
   const getStatus = (establishment) => {
     if (establishment.isActive === true) {
-      return { label: 'Aprovado', className: 'approved' };
+      return { label: 'Ativo', className: 'approved' };
     }
     if (establishment.isActive === false) {
-      return { label: 'Rejeitado', className: 'rejected' };
+      return { label: 'Inativo', className: 'inactive' };
     }
     return { label: 'Aguardando aprovação', className: 'pending' };
   };
+
 
   const establishmentCounts = useMemo(() => {
     return establishments.reduce(
@@ -104,6 +109,15 @@ export function DashboardMerchant() {
         return acc;
       },
       { total: 0, approved: 0, pending: 0, rejected: 0 }
+    );
+  }, [establishments]);
+
+  const activeSegmentsWithEstablishments = useMemo(() => {
+    return new Set(
+      establishments
+        .filter(item => item.isActive === true)
+        .map(item => item.trailPartId)
+        .filter(Boolean)
     );
   }, [establishments]);
 
@@ -127,48 +141,117 @@ export function DashboardMerchant() {
     });
   };
 
-  const mapSegments = useMemo(() => {
-    const segmentNames = trailParts.map(part => part.name || `Trecho ${part.id}`);
-    const segmentStatus = trailParts.map(part => ({
-      completed: segmentsWithEstablishments.includes(part.id)
-    }));
-    const segmentTooltips = trailParts.map(part => {
-      const hasEstablishment = segmentsWithEstablishments.includes(part.id);
-      return hasEstablishment
-        ? `${part.name || `Trecho ${part.id}`} - Com estabelecimentos`
-        : `${part.name || `Trecho ${part.id}`} - Sem estabelecimentos`;
+  const orderedCheckpoints = useMemo(() => {
+    if (!trailParts.length || !checkpoints.length) {
+      return checkpoints;
+    }
+
+    const checkpointMap = new Map(
+      checkpoints.map(checkpoint => [checkpoint.id, checkpoint])
+    );
+
+    const orderedParts = [...trailParts].sort((a, b) => Number(a.id) - Number(b.id));
+    const sequence = [];
+
+    orderedParts.forEach((part, index) => {
+      if (index === 0 && part.fromCheckpointId) {
+        const fromCheckpoint = checkpointMap.get(part.fromCheckpointId);
+        if (fromCheckpoint) {
+          sequence.push(fromCheckpoint);
+        }
+      }
+      if (part.toCheckpointId) {
+        const toCheckpoint = checkpointMap.get(part.toCheckpointId);
+        if (toCheckpoint) {
+          sequence.push(toCheckpoint);
+        }
+      }
     });
+
+    return sequence.length ? sequence : checkpoints;
+  }, [trailParts, checkpoints]);
+
+  const mapSegments = useMemo(() => {
+    const partByCheckpointPair = new Map();
+    trailParts.forEach(part => {
+      if (part.fromCheckpointId && part.toCheckpointId) {
+        partByCheckpointPair.set(`${part.fromCheckpointId}-${part.toCheckpointId}`, part);
+      }
+    });
+
+    const segmentNames = [];
+    const segmentStatus = [];
+    const segmentTooltips = [];
+
+    if (!orderedCheckpoints.length) {
+      const fallbackNames = trailParts.map(part => part.name || `Trecho ${part.id}`);
+      const fallbackStatus = trailParts.map(part => ({
+        completed: activeSegmentsWithEstablishments.has(part.id)
+      }));
+      const fallbackTooltips = trailParts.map(part => {
+        const hasEstablishment = activeSegmentsWithEstablishments.has(part.id);
+        return hasEstablishment
+          ? `${part.name || `Trecho ${part.id}`} - Com estabelecimentos`
+          : `${part.name || `Trecho ${part.id}`} - Sem estabelecimentos`;
+      });
+      return { segmentNames: fallbackNames, segmentStatus: fallbackStatus, segmentTooltips: fallbackTooltips };
+    }
+
+    for (let i = 0; i < orderedCheckpoints.length - 1; i += 1) {
+      const fromId = orderedCheckpoints[i].id;
+      const toId = orderedCheckpoints[i + 1].id;
+      const part = partByCheckpointPair.get(`${fromId}-${toId}`)
+        || partByCheckpointPair.get(`${toId}-${fromId}`);
+
+      const partName = part?.name || `Trecho ${i + 1}`;
+      const hasEstablishment = part ? activeSegmentsWithEstablishments.has(part.id) : false;
+      segmentNames.push(partName);
+      segmentStatus.push({ completed: hasEstablishment });
+      segmentTooltips.push(
+        hasEstablishment
+          ? `${partName} - Com estabelecimentos`
+          : `${partName} - Sem estabelecimentos`
+      );
+    }
+
     return { segmentNames, segmentStatus, segmentTooltips };
-  }, [trailParts, segmentsWithEstablishments]);
+  }, [trailParts, orderedCheckpoints, activeSegmentsWithEstablishments]);
 
   const orderedSegmentStats = useMemo(() => {
     return [...segmentStats].sort((a, b) => Number(a.id) - Number(b.id));
   }, [segmentStats]);
 
   const checkpointMarkers = useMemo(() => {
-    return checkpoints.map(checkpoint => {
+    return orderedCheckpoints.map(checkpoint => {
       return {
         ...checkpoint,
         name: checkpoint.name,
         tooltip: checkpoint.name
       };
     });
-  }, [checkpoints]);
+  }, [orderedCheckpoints]);
 
   const establishmentMarkers = useMemo(() => {
     return establishments
       .filter(item => Number.isFinite(item.lat) && Number.isFinite(item.lon))
-      .map(item => ({
-        lat: item.lat,
-        lon: item.lon,
-        name: item.name || 'Estabelecimento',
-        tooltip: item.trailPartName
-          ? `${item.name || 'Estabelecimento'} - ${item.trailPartName}`
-          : (item.name || 'Estabelecimento'),
-        iconUrl: '/maps/pin.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32]
-      }));
+      .map(item => {
+        const baseName = item.name || 'Estabelecimento';
+        const baseTooltip = item.trailPartName
+          ? `${baseName} - ${item.trailPartName}`
+          : baseName;
+        const tooltip = item.isActive === false
+          ? `${baseTooltip} - Inativo`
+          : baseTooltip;
+        return {
+          lat: item.lat,
+          lon: item.lon,
+          name: baseName,
+          tooltip,
+          iconUrl: '/maps/pin.png',
+          iconSize: [32, 32],
+          iconAnchor: [16, 32]
+        };
+      });
   }, [establishments]);
 
   const startEdit = (establishment) => {
@@ -189,6 +272,14 @@ export function DashboardMerchant() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (isMerchantBlocked) {
+      setFormStatus({
+        loading: false,
+        error: 'Seu cadastro de comerciante precisa ser aprovado para cadastrar estabelecimentos.',
+        success: ''
+      });
+      return;
+    }
     if (!merchantId) {
       setFormStatus({ loading: false, error: 'Usuario nao identificado.', success: '' });
       return;
@@ -234,14 +325,28 @@ export function DashboardMerchant() {
       setFormStatus({ loading: false, error: 'Usuario nao identificado.', success: '' });
       return;
     }
-    const shouldProceed = window.confirm('Deseja inativar este estabelecimento?');
-    if (!shouldProceed) return;
 
     setFormStatus({ loading: true, error: '', success: '' });
     try {
       await updateEstablishment(establishment.id, { isActive: false });
       refresh();
       setFormStatus({ loading: false, error: '', success: 'Estabelecimento inativado.' });
+    } catch (submitError) {
+      setFormStatus({ loading: false, error: submitError.message, success: '' });
+    }
+  };
+
+  const handleReactivate = async (establishment) => {
+    if (!merchantId) {
+      setFormStatus({ loading: false, error: 'Usuario nao identificado.', success: '' });
+      return;
+    }
+
+    setFormStatus({ loading: true, error: '', success: '' });
+    try {
+      await updateEstablishment(establishment.id, { isActive: true });
+      refresh();
+      setFormStatus({ loading: false, error: '', success: 'Estabelecimento reativado.' });
     } catch (submitError) {
       setFormStatus({ loading: false, error: submitError.message, success: '' });
     }
@@ -270,6 +375,26 @@ export function DashboardMerchant() {
               <div>
                 <h3>Não foi possível carregar os dados</h3>
                 <p>{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isMerchantBlocked && (
+          <div className="status-banner warning">
+            <div className="banner-content">
+              <span className="banner-icon">⏳</span>
+              <div>
+                <h3>
+                  {isMerchantRejected
+                    ? 'Cadastro de comerciante rejeitado'
+                    : 'Cadastro de comerciante em análise'}
+                </h3>
+                <p>
+                  {isMerchantRejected
+                    ? 'Seu cadastro foi rejeitado. Entre em contato com o suporte para mais detalhes.'
+                    : 'Enquanto a aprovação não for concluída, não é possível cadastrar estabelecimentos.'}
+                </p>
               </div>
             </div>
           </div>
@@ -306,9 +431,9 @@ export function DashboardMerchant() {
               <div className="kpi-card">
                 <div className="kpi-icon">⛔</div>
                 <div className="kpi-content">
-                  <p className="kpi-label">Rejeitados</p>
+                  <p className="kpi-label">Inativos</p>
                   <p className="kpi-value">{loading ? '-' : establishmentCounts.rejected}</p>
-                  <p className="kpi-subtext">Necessitam ajuste</p>
+                  <p className="kpi-subtext">Estabelecimentos desativados</p>
                 </div>
               </div>
             </div>
@@ -341,45 +466,50 @@ export function DashboardMerchant() {
                       <p><strong>Email:</strong> {establishment.email || '-'}</p>
                       <p><strong>Horário:</strong> {establishment.openingHours || '-'}</p>
                       <p><strong>Trecho:</strong> {establishment.trailPartName || '-'}</p>
-                      {establishment.isActive === false && (
-                        <p><strong>Motivo da rejeição:</strong> {establishment.rejectionReason || 'Motivo não informado'}</p>
-                      )}
                     </div>
                     <div className="point-actions">
                       <button className="btn btn-secondary" type="button" onClick={() => startEdit(establishment)}>
                         Editar
                       </button>
-                      <button className="btn btn-secondary" type="button" onClick={() => handleDeactivate(establishment)}>
-                        Inativar
-                      </button>
+                      {establishment.isActive === false ? (
+                        <button className="btn btn-secondary" type="button" onClick={() => handleReactivate(establishment)}>
+                          Reativar
+                        </button>
+                      ) : (
+                        <button className="btn btn-secondary" type="button" onClick={() => handleDeactivate(establishment)}>
+                          Inativar
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
               })}
             </div>
             <div className="section-header">
-              <button
-                className="btn btn-primary"
-                type="button"
-                onClick={() => {
-                  setEditingId(null);
-                  setShowForm(true);
-                  setFormState({
-                    name: '',
-                    category: '',
-                    address: '',
-                    email: '',
-                    phone: '',
-                    openingHours: '',
-                    description: '',
-                    locationX: '',
-                    locationY: ''
-                  });
-                }}
-                disabled={isFormDisabled}
-              >
-                + Novo estabelecimento
-              </button>
+              {!isMerchantRejected && (
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  onClick={() => {
+                    setEditingId(null);
+                    setShowForm(true);
+                    setFormState({
+                      name: '',
+                      category: '',
+                      address: '',
+                      email: '',
+                      phone: '',
+                      openingHours: '',
+                      description: '',
+                      locationX: '',
+                      locationY: ''
+                    });
+                  }}
+                  disabled={isFormDisabled}
+                >
+                  + Novo estabelecimento
+                </button>
+              )}
             </div>
           </section>
 
@@ -484,7 +614,6 @@ export function DashboardMerchant() {
                 </div>
               </div>
                 {formStatus.error && <p className="form-message error">{formStatus.error}</p>}
-                {formStatus.success && <p className="form-message success">{formStatus.success}</p>}
                 <div className="form-actions">
                   <button className="btn btn-primary" type="submit" disabled={isFormDisabled}>
                     {editingId ? 'Salvar alteracoes' : 'Cadastrar estabelecimento'}
@@ -497,12 +626,29 @@ export function DashboardMerchant() {
             </section>
           )}
 
+          {formStatus.success && (
+            <div className="success-modal-overlay" role="dialog" aria-modal="true">
+              <div className="success-modal">
+                <div className="success-modal-icon">✅</div>
+                <h3>Alteracao salva</h3>
+                <p>{formStatus.success}</p>
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  onClick={() => setFormStatus(prev => ({ ...prev, success: '' }))}
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          )}
+
           <section className="analysis-section">
             <h2>Mapa dos trechos com estabelecimentos</h2>
             <div className="analysis-card">
               <TrailMap
                 kmlUrl="http://localhost:1337/maps/caminho-cora.kml"
-                completedCount={segmentsWithEstablishments.length}
+                completedCount={activeSegmentsWithEstablishments.size}
                 totalCount={trailParts.length}
                 segmentNames={mapSegments.segmentNames}
                 segmentStatus={mapSegments.segmentStatus}

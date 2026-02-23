@@ -52,7 +52,7 @@ export async function fetchPilgrimAnalytics() {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('[ANALYTICS-API] ❌ Erro na resposta:', response.status, errorText);
-      throw new Error(`Erro ao buscar dados: ${response.status}`);
+      throw new Error(errorText || `Erro ao buscar dados: ${response.status}`);
     }
 
     const data = await response.json();
@@ -89,7 +89,8 @@ export async function fetchManagerAnalytics(startDate = null, endDate = null) {
     });
 
     if (!response.ok) {
-      throw new Error(`Erro ao buscar dados: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(errorText || `Erro ao buscar dados: ${response.status}`);
     }
 
     const data = await response.json();
@@ -155,6 +156,40 @@ export async function updateEstablishment(id, payload) {
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(errorText || `Erro ao atualizar estabelecimento: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function updateMerchantApproval(merchantId, payload) {
+  if (!merchantId) {
+    throw new Error('merchantId é obrigatório');
+  }
+
+  const response = await fetch(`${API_URL}/dashboards/merchants/${merchantId}/approval`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || `Erro ao atualizar comerciante: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function createMerchant(payload) {
+  const response = await fetch(`${API_URL}/dashboards/merchants`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || `Erro ao cadastrar comerciante: ${response.status}`);
   }
 
   return response.json();

@@ -15,7 +15,7 @@ import { AuthenticatedNavigation } from '../components/Navigation/AuthenticatedN
 import { DashboardLayout } from '../components/Layout/DashboardLayout';
 import { useManagerDashboard } from '../hooks/useManagerDashboard';
 import { TrailMap } from '../components/TrailMap/TrailMap';
-import { createEstablishment, updateEstablishment } from '../services/analyticsAPI';
+import { createEstablishment, createMerchant, updateEstablishment, updateMerchantApproval } from '../services/analyticsAPI';
 import './DashboardManager.css';
 
 ChartJS.register(
@@ -31,6 +31,7 @@ ChartJS.register(
 
 const monthLabels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 const lineColors = ['#2d9cdb', '#6c5ce7', '#00b894', '#e17055', '#e84393', '#fdcb6e'];
+const DEFAULT_MERCHANT_PASSWORD = 'Cora@123';
 
 
 /*
@@ -73,6 +74,7 @@ export function DashboardManager() {
     locationY: ''
   });
   const [formStatus, setFormStatus] = useState({ loading: false, error: '', success: '' });
+  const [successModal, setSuccessModal] = useState({ open: false, message: '' });
   const [rejectionState, setRejectionState] = useState({
     show: false,
     id: null,
@@ -80,6 +82,16 @@ export function DashboardManager() {
     establishment: null
   });
   const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
+  const [merchantSortConfig, setMerchantSortConfig] = useState({ key: 'status', direction: 'asc' });
+  const [merchantAction, setMerchantAction] = useState({ mode: '', merchant: null, reason: '' });
+  const [merchantActionStatus, setMerchantActionStatus] = useState({ loading: false, error: '', success: '' });
+  const [merchantDraft, setMerchantDraft] = useState({
+    name: '',
+    nickname: '',
+    email: '',
+    birthdate: '',
+    sex: ''
+  });
 
   
   // Dados fallback quando há erro
@@ -206,10 +218,12 @@ export function DashboardManager() {
     try {
       if (editingId) {
         await updateEstablishment(editingId, payload);
-        setFormStatus({ loading: false, error: '', success: 'Estabelecimento atualizado com sucesso.' });
+        setFormStatus({ loading: false, error: '', success: '' });
+        setSuccessModal({ open: true, message: 'Estabelecimento salvo com sucesso.' });
       } else {
         await createEstablishment(payload);
-        setFormStatus({ loading: false, error: '', success: 'Estabelecimento cadastrado com sucesso.' });
+        setFormStatus({ loading: false, error: '', success: '' });
+        setSuccessModal({ open: true, message: 'Estabelecimento salvo com sucesso.' });
       }
       refresh();
       resetForm();
@@ -261,6 +275,28 @@ export function DashboardManager() {
     }
   };
 
+  const handleDeactivate = async (establishment) => {
+    setFormStatus({ loading: true, error: '', success: '' });
+    try {
+      await updateEstablishment(establishment.id, { isActive: false });
+      refresh();
+      setFormStatus({ loading: false, error: '', success: 'Estabelecimento inativado.' });
+    } catch (submitError) {
+      setFormStatus({ loading: false, error: submitError.message, success: '' });
+    }
+  };
+
+  const handleReactivate = async (establishment) => {
+    setFormStatus({ loading: true, error: '', success: '' });
+    try {
+      await updateEstablishment(establishment.id, { isActive: true, rejectionReason: null });
+      refresh();
+      setFormStatus({ loading: false, error: '', success: 'Estabelecimento reativado.' });
+    } catch (submitError) {
+      setFormStatus({ loading: false, error: submitError.message, success: '' });
+    }
+  };
+
   const handleSort = (key) => {
     setSortConfig(prev => {
       if (prev.key === key) {
@@ -270,14 +306,157 @@ export function DashboardManager() {
     });
   };
 
+  const handleMerchantSort = (key) => {
+    setMerchantSortConfig(prev => {
+      if (prev.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
   const getStatus = (establishment) => {
     if (establishment.isActive === true) {
-      return { label: 'Aprovado', className: 'approved' };
+      return { label: 'Ativo', className: 'approved' };
     }
     if (establishment.isActive === false) {
+      return { label: 'Inativo', className: 'inactive' };
+    }
+    return { label: 'Aguardando', className: 'pending' };
+  };
+
+  const getMerchantStatus = (approvedValue) => {
+    if (approvedValue === true) {
+      return { label: 'Aprovado', className: 'approved' };
+    }
+    if (approvedValue === false) {
       return { label: 'Rejeitado', className: 'rejected' };
     }
     return { label: 'Aguardando', className: 'pending' };
+  };
+
+  const formatBirthdate = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const formatSexLabel = (value) => {
+    const raw = String(value || '').toLowerCase();
+    if (raw === 'male' || raw === 'masculino') return 'Masculino';
+    if (raw === 'female' || raw === 'feminino') return 'Feminino';
+    return '-';
+  };
+
+  const normalizeSexValue = (value) => {
+    const raw = String(value || '').trim().toLowerCase();
+    if (raw === 'male' || raw === 'masculino' || raw === 'm') return 'Male';
+    if (raw === 'female' || raw === 'feminino' || raw === 'f') return 'Female';
+    return null;
+  };
+
+  const formatUserTypeLabel = (value) => {
+    const raw = String(value || '').toLowerCase();
+    if (raw === 'manager' || raw === 'gestor') return 'Gestor';
+    if (raw === 'merchant' || raw === 'comerciante') return 'Comerciante';
+    return 'Peregrino';
+  };
+
+  const openMerchantView = (merchant) => {
+    setMerchantActionStatus({ loading: false, error: '', success: '' });
+    setMerchantAction({ mode: 'view', merchant, reason: '' });
+  };
+
+  const openMerchantReject = (merchant) => {
+    setMerchantActionStatus({ loading: false, error: '', success: '' });
+    setMerchantAction({ mode: 'reject', merchant, reason: '' });
+  };
+
+  const openMerchantCreate = () => {
+    setMerchantActionStatus({ loading: false, error: '', success: '' });
+    setMerchantDraft({ name: '', nickname: '', email: '', birthdate: '', sex: '' });
+    setMerchantAction({ mode: 'create', merchant: null, reason: '' });
+  };
+
+  const closeMerchantAction = () => {
+    setMerchantActionStatus({ loading: false, error: '', success: '' });
+    setMerchantAction({ mode: '', merchant: null, reason: '' });
+  };
+
+  const handleMerchantApprove = async (merchant) => {
+    if (!merchant?.id) return;
+    setMerchantActionStatus({ loading: true, error: '', success: '' });
+    try {
+      await updateMerchantApproval(merchant.id, { approved: true });
+      refresh();
+      closeMerchantAction();
+    } catch (submitError) {
+      setMerchantActionStatus({ loading: false, error: submitError.message, success: '' });
+    }
+  };
+
+  const handleMerchantRejectSubmit = async (event) => {
+    event.preventDefault();
+    if (!merchantAction.merchant?.id) return;
+    if (!merchantAction.reason.trim()) {
+      setMerchantActionStatus({ loading: false, error: 'Informe a justificativa da rejeicao.', success: '' });
+      return;
+    }
+    setMerchantActionStatus({ loading: true, error: '', success: '' });
+    try {
+      await updateMerchantApproval(merchantAction.merchant.id, {
+        approved: false,
+        reason: merchantAction.reason.trim()
+      });
+      refresh();
+      closeMerchantAction();
+    } catch (submitError) {
+      setMerchantActionStatus({ loading: false, error: submitError.message, success: '' });
+    }
+  };
+
+  const handleMerchantDraftChange = (field, value) => {
+    setMerchantDraft(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleMerchantCreateSubmit = async (event) => {
+    event.preventDefault();
+    const name = merchantDraft.name.trim();
+    const email = merchantDraft.email.trim();
+
+    if (!name) {
+      setMerchantActionStatus({ loading: false, error: 'Informe o nome completo.', success: '' });
+      return;
+    }
+
+    if (!email) {
+      setMerchantActionStatus({ loading: false, error: 'Informe o email.', success: '' });
+      return;
+    }
+
+    setMerchantActionStatus({ loading: true, error: '', success: '' });
+    try {
+      await createMerchant({
+        name,
+        nickname: merchantDraft.nickname.trim() || null,
+        email,
+        birthdate: merchantDraft.birthdate || null,
+        sex: normalizeSexValue(merchantDraft.sex),
+        password: DEFAULT_MERCHANT_PASSWORD
+      });
+      refresh();
+      setMerchantActionStatus({
+        loading: false,
+        error: '',
+        success: `Comerciante cadastrado. Senha inicial: ${DEFAULT_MERCHANT_PASSWORD}`
+      });
+    } catch (submitError) {
+      setMerchantActionStatus({ loading: false, error: submitError.message, success: '' });
+    }
   };
 
   const isYearVisible = (year) => {
@@ -311,30 +490,136 @@ export function DashboardManager() {
     return sorted;
   }, [establishments, sortConfig]);
 
-  const mapSegments = useMemo(() => {
-    const segmentNames = trailParts.map(part => part.name || `Trecho ${part.id}`);
-    const segmentStatus = trailParts.map(part => ({
-      completed: segmentsWithEstablishments.includes(part.id)
-    }));
-    const segmentTooltips = trailParts.map(part => {
-      const hasEstablishment = segmentsWithEstablishments.includes(part.id);
-      return hasEstablishment
-        ? `${part.name || `Trecho ${part.id}`} - Com estabelecimentos`
-        : `${part.name || `Trecho ${part.id}`} - Sem estabelecimentos`;
+  const orderedMerchants = useMemo(() => {
+    const sorted = [...merchants];
+    const statusRank = (approvedValue) => {
+      if (approvedValue === null || approvedValue === undefined) return 0;
+      if (approvedValue === true) return 1;
+      return 2;
+    };
+    const getName = (item) => String(item.name || item.username || item.email || '').toLowerCase();
+
+    sorted.sort((a, b) => {
+      const direction = merchantSortConfig.direction === 'asc' ? 1 : -1;
+      if (merchantSortConfig.key === 'status') {
+        const rankDiff = (statusRank(a.merchantApproved) - statusRank(b.merchantApproved)) * direction;
+        if (rankDiff !== 0) return rankDiff;
+        return getName(a).localeCompare(getName(b));
+      }
+
+      const getValue = (item) => {
+        if (merchantSortConfig.key === 'name') return item.name || item.username || item.email || '';
+        if (merchantSortConfig.key === 'email') return item.email || '';
+        return item[merchantSortConfig.key] || '';
+      };
+      const aValue = getValue(a);
+      const bValue = getValue(b);
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return (aValue - bValue) * direction;
+      }
+      return String(aValue).localeCompare(String(bValue)) * direction;
     });
+    return sorted;
+  }, [merchants, merchantSortConfig]);
+
+  const activeEstablishments = useMemo(() => {
+    return establishments.filter(item => item.isActive === true);
+  }, [establishments]);
+
+  const activeSegmentsWithEstablishments = useMemo(() => {
+    return new Set(
+      activeEstablishments
+        .map(item => item.trailPartId)
+        .filter(Boolean)
+    );
+  }, [activeEstablishments]);
+
+  const orderedCheckpoints = useMemo(() => {
+    if (!trailParts.length || !checkpoints.length) {
+      return checkpoints;
+    }
+
+    const checkpointMap = new Map(
+      checkpoints.map(checkpoint => [checkpoint.id, checkpoint])
+    );
+
+    const orderedParts = [...trailParts].sort((a, b) => Number(a.id) - Number(b.id));
+    const sequence = [];
+
+    orderedParts.forEach((part, index) => {
+      if (index === 0 && part.fromCheckpointId) {
+        const fromCheckpoint = checkpointMap.get(part.fromCheckpointId);
+        if (fromCheckpoint) {
+          sequence.push(fromCheckpoint);
+        }
+      }
+      if (part.toCheckpointId) {
+        const toCheckpoint = checkpointMap.get(part.toCheckpointId);
+        if (toCheckpoint) {
+          sequence.push(toCheckpoint);
+        }
+      }
+    });
+
+    return sequence.length ? sequence : checkpoints;
+  }, [trailParts, checkpoints]);
+
+  const mapSegments = useMemo(() => {
+    const partByCheckpointPair = new Map();
+    trailParts.forEach(part => {
+      if (part.fromCheckpointId && part.toCheckpointId) {
+        partByCheckpointPair.set(`${part.fromCheckpointId}-${part.toCheckpointId}`, part);
+      }
+    });
+
+    const segmentNames = [];
+    const segmentStatus = [];
+    const segmentTooltips = [];
+
+    if (!orderedCheckpoints.length) {
+      const fallbackNames = trailParts.map(part => part.name || `Trecho ${part.id}`);
+      const fallbackStatus = trailParts.map(part => ({
+        completed: activeSegmentsWithEstablishments.has(part.id)
+      }));
+      const fallbackTooltips = trailParts.map(part => {
+        const hasEstablishment = activeSegmentsWithEstablishments.has(part.id);
+        return hasEstablishment
+          ? `${part.name || `Trecho ${part.id}`} - Com estabelecimentos`
+          : `${part.name || `Trecho ${part.id}`} - Sem estabelecimentos`;
+      });
+      return { segmentNames: fallbackNames, segmentStatus: fallbackStatus, segmentTooltips: fallbackTooltips };
+    }
+
+    for (let i = 0; i < orderedCheckpoints.length - 1; i += 1) {
+      const fromId = orderedCheckpoints[i].id;
+      const toId = orderedCheckpoints[i + 1].id;
+      const part = partByCheckpointPair.get(`${fromId}-${toId}`)
+        || partByCheckpointPair.get(`${toId}-${fromId}`);
+
+      const partName = part?.name || `Trecho ${i + 1}`;
+      const hasEstablishment = part ? activeSegmentsWithEstablishments.has(part.id) : false;
+      segmentNames.push(partName);
+      segmentStatus.push({ completed: hasEstablishment });
+      segmentTooltips.push(
+        hasEstablishment
+          ? `${partName} - Com estabelecimentos`
+          : `${partName} - Sem estabelecimentos`
+      );
+    }
+
     return { segmentNames, segmentStatus, segmentTooltips };
-  }, [trailParts, segmentsWithEstablishments]);
+  }, [trailParts, orderedCheckpoints, activeSegmentsWithEstablishments]);
 
   const checkpointMarkers = useMemo(() => {
-    return checkpoints.map(checkpoint => ({
+    return orderedCheckpoints.map(checkpoint => ({
       ...checkpoint,
       name: checkpoint.name,
       tooltip: checkpoint.name
     }));
-  }, [checkpoints]);
+  }, [orderedCheckpoints]);
 
   const establishmentMarkers = useMemo(() => {
-    return establishments
+    return activeEstablishments
       .filter(item => Number.isFinite(item.lat) && Number.isFinite(item.lon))
       .map(item => ({
         lat: item.lat,
@@ -347,7 +632,7 @@ export function DashboardManager() {
         iconSize: [32, 32],
         iconAnchor: [16, 32]
       }));
-  }, [establishments]);
+  }, [activeEstablishments]);
 
   const registrationYears = useMemo(() => Object.keys(monthlyRegistrations || {}).sort(), [monthlyRegistrations]);
   const registrationColors = useMemo(() => {
@@ -487,10 +772,10 @@ export function DashboardManager() {
     };
 
     const overallCategories = new Set(
-      establishments.map(item => item.category).filter(Boolean)
+      activeEstablishments.map(item => item.category).filter(Boolean)
     );
     const overallServices = new Set(
-      establishments.flatMap(item => normalizeServices(item.services))
+      activeEstablishments.flatMap(item => normalizeServices(item.services))
     );
 
     const attention = [];
@@ -499,7 +784,7 @@ export function DashboardManager() {
 
     trailParts.forEach(part => {
       const name = part.name || `Trecho ${part.id}`;
-      const segmentEstablishments = establishments.filter(item => item.trailPartId === part.id);
+      const segmentEstablishments = activeEstablishments.filter(item => item.trailPartId === part.id);
       if (segmentEstablishments.length === 0) {
         attention.push(name);
         return;
@@ -543,7 +828,7 @@ export function DashboardManager() {
       insufficientPercent,
       attentionPercent
     };
-  }, [trailParts, establishments]);
+  }, [trailParts, activeEstablishments]);
 
   const insightsRegistrations = useMemo(() => {
     const monthTotals = Array.from({ length: 12 }, () => 0);
@@ -882,9 +1167,7 @@ Erro: ${error || 'Nenhum erro'}`}
               </div>
             </div>
           </div>
-          <div className="controls controls-bottom">
-            <button className="btn btn-secondary" type="button">Exportar Relatório</button>
-          </div>
+          <div className="controls controls-bottom" />
         </section>
 
         <section className="analysis-section">
@@ -942,9 +1225,7 @@ Erro: ${error || 'Nenhum erro'}`}
               </div>
             </div>
           </div>
-          <div className="controls controls-bottom">
-            <button className="btn btn-secondary" type="button">Exportar Relatório</button>
-          </div>
+          <div className="controls controls-bottom" />
         </section>
 
         {/* Tabelas de Gestão */}
@@ -955,7 +1236,7 @@ Erro: ${error || 'Nenhum erro'}`}
             <div className="map-card">
               <TrailMap
                 kmlUrl="http://localhost:1337/maps/caminho-cora.kml"
-                completedCount={segmentsWithEstablishments.length}
+                completedCount={activeSegmentsWithEstablishments.size}
                 totalCount={trailParts.length}
                 segmentNames={mapSegments.segmentNames}
                 segmentStatus={mapSegments.segmentStatus}
@@ -965,6 +1246,7 @@ Erro: ${error || 'Nenhum erro'}`}
               />
             </div>
           </div>
+          <h3 className="table-subtitle">Estabelecimentos cadastrados</h3>
           <div className="table-container">
             <table className="data-table">
               <thead>
@@ -1010,7 +1292,7 @@ Erro: ${error || 'Nenhum erro'}`}
                 )}
                 {orderedEstablishments.map(establishment => {
                   const status = getStatus(establishment);
-                  const isPending = establishment.isActive !== true && establishment.isActive !== false;
+                  const isInactive = establishment.isActive === false;
                   return (
                     <tr key={establishment.id}>
                       <td>{establishment.name || '-'}</td>
@@ -1020,23 +1302,44 @@ Erro: ${error || 'Nenhum erro'}`}
                       <td><span className={`badge ${status.className}`}>{status.label}</span></td>
                       <td>
                         <div className="action-group">
-                          <button className="action-btn" type="button" onClick={() => startEdit(establishment)}>
-                            Editar
+                          <button
+                            className="action-btn icon"
+                            type="button"
+                            onClick={() => startEdit(establishment)}
+                            aria-label="Editar"
+                            title="Editar"
+                          >
+                            ✏️
                           </button>
-                          {!isPending && (
-                            <button className="action-btn" type="button" onClick={() => startView(establishment)}>
-                              Visualizar
+                          <button
+                            className="action-btn icon"
+                            type="button"
+                            onClick={() => startView(establishment)}
+                            aria-label="Visualizar"
+                            title="Visualizar"
+                          >
+                            👁️
+                          </button>
+                          {isInactive ? (
+                            <button
+                              className="action-btn icon"
+                              type="button"
+                              onClick={() => handleReactivate(establishment)}
+                              aria-label="Reativar"
+                              title="Reativar"
+                            >
+                              🔄
                             </button>
-                          )}
-                          {isPending && (
-                            <>
-                              <button className="action-btn" type="button" onClick={() => handleApprove(establishment)}>
-                                Aprovar
-                              </button>
-                              <button className="action-btn danger" type="button" onClick={() => handleRejectOpen(establishment)}>
-                                Rejeitar
-                              </button>
-                            </>
+                          ) : (
+                            <button
+                              className="action-btn icon"
+                              type="button"
+                              onClick={() => handleDeactivate(establishment)}
+                              aria-label="Inativar"
+                              title="Inativar"
+                            >
+                              ⏻
+                            </button>
                           )}
                         </div>
                       </td>
@@ -1048,146 +1351,456 @@ Erro: ${error || 'Nenhum erro'}`}
           </div>
           <div className="controls controls-bottom">
             <button className="btn btn-secondary" type="button" onClick={startCreate}>+ Novo Estabelecimento</button>
-            <button className="btn btn-secondary">Exportar Relatório</button>
           </div>
-        </section>
-
-        {showForm && (
-          <section className="manager-form-section">
-            <h2>
-              {formMode === 'view'
-                ? 'Visualizar estabelecimento'
-                : (editingId ? 'Editar estabelecimento' : 'Cadastrar novo estabelecimento')}
-            </h2>
-            <form className="manager-form" onSubmit={handleSubmit}>
-              <div className="form-grid">
-                <div className="form-field">
-                  <label htmlFor="manager-owner">Dono</label>
-                  <select
-                    id="manager-owner"
-                    value={formState.ownerId}
-                    onChange={(event) => handleFieldChange('ownerId', event.target.value)}
-                    disabled={formMode === 'view' || formStatus.loading}
-                    required
-                  >
-                    <option value="">Selecione</option>
-                    {merchants.map(merchant => (
-                      <option key={merchant.id} value={merchant.id}>
-                        {merchant.username || merchant.email}
-                      </option>
-                    ))}
-                  </select>
+          {showForm && (
+            <section className="manager-form-section">
+              <h2>
+                {formMode === 'view'
+                  ? 'Visualizar estabelecimento'
+                  : (editingId ? 'Editar estabelecimento' : 'Cadastrar novo estabelecimento')}
+              </h2>
+              <form className="manager-form" onSubmit={handleSubmit}>
+                <div className="form-grid">
+                  <div className="form-field">
+                    <label htmlFor="manager-owner">Dono</label>
+                    <select
+                      id="manager-owner"
+                      value={formState.ownerId}
+                      onChange={(event) => handleFieldChange('ownerId', event.target.value)}
+                      disabled={formMode === 'view' || formStatus.loading}
+                      required
+                    >
+                      <option value="">Selecione</option>
+                      {merchants.map(merchant => (
+                        <option key={merchant.id} value={merchant.id}>
+                          {merchant.username || merchant.email}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="manager-name">Nome</label>
+                    <input
+                      id="manager-name"
+                      type="text"
+                      value={formState.name}
+                      onChange={(event) => handleFieldChange('name', event.target.value)}
+                      disabled={formMode === 'view' || formStatus.loading}
+                      required
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="manager-category">Categoria</label>
+                    <input
+                      id="manager-category"
+                      type="text"
+                      value={formState.category}
+                      onChange={(event) => handleFieldChange('category', event.target.value)}
+                      disabled={formMode === 'view' || formStatus.loading}
+                      required
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="manager-address">Endereço</label>
+                    <input
+                      id="manager-address"
+                      type="text"
+                      value={formState.address}
+                      onChange={(event) => handleFieldChange('address', event.target.value)}
+                      disabled={formMode === 'view' || formStatus.loading}
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="manager-email">Email</label>
+                    <input
+                      id="manager-email"
+                      type="email"
+                      value={formState.email}
+                      onChange={(event) => handleFieldChange('email', event.target.value)}
+                      disabled={formMode === 'view' || formStatus.loading}
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="manager-phone">Telefone</label>
+                    <input
+                      id="manager-phone"
+                      type="text"
+                      value={formState.phone}
+                      onChange={(event) => handleFieldChange('phone', event.target.value)}
+                      disabled={formMode === 'view' || formStatus.loading}
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="manager-hours">Horario de funcionamento</label>
+                    <input
+                      id="manager-hours"
+                      type="text"
+                      value={formState.openingHours}
+                      onChange={(event) => handleFieldChange('openingHours', event.target.value)}
+                      disabled={formMode === 'view' || formStatus.loading}
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="manager-x">Coordenada X (UTM)</label>
+                    <input
+                      id="manager-x"
+                      type="number"
+                      value={formState.locationX}
+                      onChange={(event) => handleFieldChange('locationX', event.target.value)}
+                      disabled={formMode === 'view' || formStatus.loading}
+                      required
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="manager-y">Coordenada Y (UTM)</label>
+                    <input
+                      id="manager-y"
+                      type="number"
+                      value={formState.locationY}
+                      onChange={(event) => handleFieldChange('locationY', event.target.value)}
+                      disabled={formMode === 'view' || formStatus.loading}
+                      required
+                    />
+                  </div>
+                  <div className="form-field full">
+                    <label htmlFor="manager-description">Descrição</label>
+                    <textarea
+                      id="manager-description"
+                      rows="3"
+                      value={formState.description}
+                      onChange={(event) => handleFieldChange('description', event.target.value)}
+                      disabled={formMode === 'view' || formStatus.loading}
+                    />
+                  </div>
                 </div>
-                <div className="form-field">
-                  <label htmlFor="manager-name">Nome</label>
-                  <input
-                    id="manager-name"
-                    type="text"
-                    value={formState.name}
-                    onChange={(event) => handleFieldChange('name', event.target.value)}
-                    disabled={formMode === 'view' || formStatus.loading}
-                    required
-                  />
-                </div>
-                <div className="form-field">
-                  <label htmlFor="manager-category">Categoria</label>
-                  <input
-                    id="manager-category"
-                    type="text"
-                    value={formState.category}
-                    onChange={(event) => handleFieldChange('category', event.target.value)}
-                    disabled={formMode === 'view' || formStatus.loading}
-                    required
-                  />
-                </div>
-                <div className="form-field">
-                  <label htmlFor="manager-address">Endereço</label>
-                  <input
-                    id="manager-address"
-                    type="text"
-                    value={formState.address}
-                    onChange={(event) => handleFieldChange('address', event.target.value)}
-                    disabled={formMode === 'view' || formStatus.loading}
-                  />
-                </div>
-                <div className="form-field">
-                  <label htmlFor="manager-email">Email</label>
-                  <input
-                    id="manager-email"
-                    type="email"
-                    value={formState.email}
-                    onChange={(event) => handleFieldChange('email', event.target.value)}
-                    disabled={formMode === 'view' || formStatus.loading}
-                  />
-                </div>
-                <div className="form-field">
-                  <label htmlFor="manager-phone">Telefone</label>
-                  <input
-                    id="manager-phone"
-                    type="text"
-                    value={formState.phone}
-                    onChange={(event) => handleFieldChange('phone', event.target.value)}
-                    disabled={formMode === 'view' || formStatus.loading}
-                  />
-                </div>
-                <div className="form-field">
-                  <label htmlFor="manager-hours">Horario de funcionamento</label>
-                  <input
-                    id="manager-hours"
-                    type="text"
-                    value={formState.openingHours}
-                    onChange={(event) => handleFieldChange('openingHours', event.target.value)}
-                    disabled={formMode === 'view' || formStatus.loading}
-                  />
-                </div>
-                <div className="form-field">
-                  <label htmlFor="manager-x">Coordenada X (UTM)</label>
-                  <input
-                    id="manager-x"
-                    type="number"
-                    value={formState.locationX}
-                    onChange={(event) => handleFieldChange('locationX', event.target.value)}
-                    disabled={formMode === 'view' || formStatus.loading}
-                    required
-                  />
-                </div>
-                <div className="form-field">
-                  <label htmlFor="manager-y">Coordenada Y (UTM)</label>
-                  <input
-                    id="manager-y"
-                    type="number"
-                    value={formState.locationY}
-                    onChange={(event) => handleFieldChange('locationY', event.target.value)}
-                    disabled={formMode === 'view' || formStatus.loading}
-                    required
-                  />
-                </div>
-                <div className="form-field full">
-                  <label htmlFor="manager-description">Descrição</label>
-                  <textarea
-                    id="manager-description"
-                    rows="3"
-                    value={formState.description}
-                    onChange={(event) => handleFieldChange('description', event.target.value)}
-                    disabled={formMode === 'view' || formStatus.loading}
-                  />
-                </div>
-              </div>
-              {formStatus.error && <p className="form-message error">{formStatus.error}</p>}
-              {formStatus.success && <p className="form-message success">{formStatus.success}</p>}
-              <div className="form-actions">
-                {formMode !== 'view' && (
-                  <button className="btn btn-primary" type="submit" disabled={formStatus.loading}>
-                    {editingId ? 'Salvar alteracoes' : 'Cadastrar estabelecimento'}
+                {formStatus.error && <p className="form-message error">{formStatus.error}</p>}
+                <div className="form-actions">
+                  {formMode !== 'view' && (
+                    <button className="btn btn-primary" type="submit" disabled={formStatus.loading}>
+                      {editingId ? 'Salvar alterações' : 'Cadastrar estabelecimento'}
+                    </button>
+                  )}
+                  <button className="btn btn-secondary" type="button" onClick={resetForm}>
+                    {formMode === 'view' ? 'Fechar' : 'Cancelar'}
                   </button>
+                </div>
+              </form>
+            </section>
+          )}
+          <h3 className="table-subtitle merchants-title">Comerciantes cadastrados</h3>
+          <div className="table-container merchants-table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>
+                    <button className="sort-button" type="button" onClick={() => handleMerchantSort('name')}>
+                      Nome
+                      <span className="sort-indicator">
+                        {merchantSortConfig.key === 'name'
+                          ? (merchantSortConfig.direction === 'asc' ? '▲' : '▼')
+                          : ''}
+                      </span>
+                    </button>
+                  </th>
+                  <th>
+                    <button className="sort-button" type="button" onClick={() => handleMerchantSort('email')}>
+                      Email
+                      <span className="sort-indicator">
+                        {merchantSortConfig.key === 'email'
+                          ? (merchantSortConfig.direction === 'asc' ? '▲' : '▼')
+                          : ''}
+                      </span>
+                    </button>
+                  </th>
+                  <th>
+                    <button className="sort-button" type="button" onClick={() => handleMerchantSort('status')}>
+                      Status
+                      <span className="sort-indicator">
+                        {merchantSortConfig.key === 'status'
+                          ? (merchantSortConfig.direction === 'asc' ? '▲' : '▼')
+                          : ''}
+                      </span>
+                    </button>
+                  </th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orderedMerchants.length === 0 && (
+                  <tr>
+                    <td colSpan={4}>Nenhum comerciante encontrado.</td>
+                  </tr>
                 )}
-                <button className="btn btn-secondary" type="button" onClick={resetForm}>
-                  {formMode === 'view' ? 'Fechar' : 'Cancelar'}
-                </button>
+                {orderedMerchants.map(merchant => {
+                  const status = getMerchantStatus(merchant.merchantApproved);
+                  const isApproved = merchant.merchantApproved === true;
+                  const isRejected = merchant.merchantApproved === false;
+                  const name = merchant.name || merchant.username || '-';
+                  return (
+                    <tr key={merchant.id}>
+                      <td>{name}</td>
+                      <td>{merchant.email || '-'}</td>
+                      <td>
+                        <span className={`badge ${status.className}`}>{status.label}</span>
+                      </td>
+                      <td>
+                        <div className="action-group">
+                          <button
+                            className="action-btn action-view"
+                            type="button"
+                            onClick={() => openMerchantView(merchant)}
+                          >
+                            Visualizar
+                          </button>
+                          <button
+                            className="action-btn action-approve"
+                            type="button"
+                            onClick={() => handleMerchantApprove(merchant)}
+                            disabled={merchantActionStatus.loading || isApproved}
+                          >
+                            Aprovar
+                          </button>
+                          <button
+                            className="action-btn action-reject"
+                            type="button"
+                            onClick={() => openMerchantReject(merchant)}
+                            disabled={isRejected}
+                          >
+                            Rejeitar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="controls controls-bottom">
+            <button className="btn btn-secondary" type="button" onClick={openMerchantCreate}>+ Novo Comerciante</button>
+          </div>
+          {merchantAction.mode === 'create' && (
+            <div className="merchant-action-card">
+              <div className="merchant-action-header">
+                <h4>Novo comerciante</h4>
+                <button className="action-btn" type="button" onClick={closeMerchantAction}>Fechar</button>
               </div>
-            </form>
-          </section>
-        )}
+              <form className="merchant-profile-card" onSubmit={handleMerchantCreateSubmit}>
+                <div className="merchant-profile-avatar">
+                  <div className="merchant-avatar-placeholder">
+                    {(merchantDraft.name || merchantDraft.nickname || 'NC')
+                      .split(' ')
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .map(part => part[0])
+                      .join('')
+                      .toUpperCase()}
+                  </div>
+                </div>
+                <div className="merchant-profile-form">
+                  <div className="merchant-form-row full">
+                    <div className="merchant-form-group full">
+                      <label>Nome completo</label>
+                      <input
+                        type="text"
+                        value={merchantDraft.name}
+                        onChange={(event) => handleMerchantDraftChange('name', event.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="merchant-form-row">
+                    <div className="merchant-form-group">
+                      <label>Nickname</label>
+                      <input
+                        type="text"
+                        value={merchantDraft.nickname}
+                        onChange={(event) => handleMerchantDraftChange('nickname', event.target.value)}
+                      />
+                    </div>
+                    <div className="merchant-form-group">
+                      <label>E-Mail</label>
+                      <input
+                        type="email"
+                        value={merchantDraft.email}
+                        onChange={(event) => handleMerchantDraftChange('email', event.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="merchant-form-row">
+                    <div className="merchant-form-group">
+                      <label>Data de Nascimento</label>
+                      <input
+                        type="date"
+                        value={merchantDraft.birthdate}
+                        onChange={(event) => handleMerchantDraftChange('birthdate', event.target.value)}
+                      />
+                    </div>
+                    <div className="merchant-form-group">
+                      <label>Sexo</label>
+                      <select
+                        value={merchantDraft.sex}
+                        onChange={(event) => handleMerchantDraftChange('sex', event.target.value)}
+                      >
+                        <option value="">Selecione</option>
+                        <option value="Female">Feminino</option>
+                        <option value="Male">Masculino</option>
+                      </select>
+                    </div>
+                  </div>
+                  {merchantActionStatus.error && (
+                    <p className="form-message error">{merchantActionStatus.error}</p>
+                  )}
+                  {merchantActionStatus.success && (
+                    <p className="form-message success">{merchantActionStatus.success}</p>
+                  )}
+                  <div className="form-actions">
+                    <button className="btn btn-primary" type="submit" disabled={merchantActionStatus.loading}>
+                      Salvar
+                    </button>
+                    <button className="btn btn-secondary" type="button" onClick={closeMerchantAction}>
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          )}
+          {merchantAction.mode === 'view' && merchantAction.merchant && (
+            <div className="merchant-action-card">
+              <div className="merchant-action-header">
+                <h4>Dados do comerciante</h4>
+                <button className="action-btn" type="button" onClick={closeMerchantAction}>Fechar</button>
+              </div>
+              <div className="merchant-profile-card">
+                <div className="merchant-profile-avatar">
+                  <div className="merchant-avatar-placeholder">
+                    {(merchantAction.merchant.name || merchantAction.merchant.username || 'US')
+                      .split(' ')
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .map(part => part[0])
+                      .join('')
+                      .toUpperCase()}
+                  </div>
+                </div>
+                <div className="merchant-profile-form">
+                  <div className="merchant-form-row full">
+                    <div className="merchant-form-group full">
+                      <label>Nome completo</label>
+                      <input
+                        type="text"
+                        value={merchantAction.merchant.name || merchantAction.merchant.username || '-'}
+                        disabled
+                      />
+                    </div>
+                  </div>
+                  <div className="merchant-form-row">
+                    <div className="merchant-form-group">
+                      <label>Nickname</label>
+                      <input
+                        type="text"
+                        value={merchantAction.merchant.nickname || '-'}
+                        disabled
+                      />
+                    </div>
+                    <div className="merchant-form-group">
+                      <label>E-Mail</label>
+                      <input
+                        type="text"
+                        value={merchantAction.merchant.email || '-'}
+                        disabled
+                      />
+                    </div>
+                  </div>
+                  <div className="merchant-form-row">
+                    <div className="merchant-form-group">
+                      <label>Data de Nascimento</label>
+                      <input
+                        type="text"
+                        value={formatBirthdate(merchantAction.merchant.birthdate) || '-'}
+                        disabled
+                      />
+                    </div>
+                    <div className="merchant-form-group">
+                      <label>Sexo</label>
+                      <input
+                        type="text"
+                        value={formatSexLabel(merchantAction.merchant.sex)}
+                        disabled
+                      />
+                    </div>
+                  </div>
+                  <div className="merchant-form-row">
+                    <div className="merchant-form-group">
+                      <label>Tipo de Usuario</label>
+                      <input
+                        type="text"
+                        value={formatUserTypeLabel(merchantAction.merchant.userType)}
+                        disabled
+                      />
+                    </div>
+                    <div className="merchant-form-group">
+                      <label>Status</label>
+                      <input
+                        type="text"
+                        value={getMerchantStatus(merchantAction.merchant.merchantApproved).label}
+                        disabled
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {merchantAction.mode === 'reject' && merchantAction.merchant && (
+            <div className="merchant-action-card">
+              <div className="merchant-action-header">
+                <h4>Rejeitar comerciante</h4>
+                <button className="action-btn" type="button" onClick={closeMerchantAction}>Fechar</button>
+              </div>
+              <form className="merchant-action-form" onSubmit={handleMerchantRejectSubmit}>
+                <div className="merchant-action-grid">
+                  <div>
+                    <span className="merchant-action-label">Nome</span>
+                    <span className="merchant-action-value">
+                      {merchantAction.merchant.name || merchantAction.merchant.username || '-'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="merchant-action-label">Email</span>
+                    <span className="merchant-action-value">
+                      {merchantAction.merchant.email || '-'}
+                    </span>
+                  </div>
+                </div>
+                <div className="merchant-action-field merchant-action-field-spaced">
+                  <label htmlFor="merchant-reject-reason">Justificativa da rejeição</label>
+                  <textarea
+                    id="merchant-reject-reason"
+                    rows="3"
+                    value={merchantAction.reason}
+                    onChange={(event) =>
+                      setMerchantAction(prev => ({ ...prev, reason: event.target.value }))
+                    }
+                  />
+                </div>
+                {merchantActionStatus.error && (
+                  <p className="form-message error">{merchantActionStatus.error}</p>
+                )}
+                <div className="form-actions">
+                  <button className="btn btn-primary" type="submit" disabled={merchantActionStatus.loading}>
+                    Confirmar rejeicao
+                  </button>
+                  <button className="btn btn-secondary" type="button" onClick={closeMerchantAction}>
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+        </section>
 
         {rejectionState.show && (
           <section className="rejection-section">
@@ -1233,6 +1846,23 @@ Erro: ${error || 'Nenhum erro'}`}
               </div>
             </form>
           </section>
+        )}
+
+        {successModal.open && (
+          <div className="success-modal-overlay" role="dialog" aria-modal="true">
+            <div className="success-modal">
+              <div className="success-modal-icon">✅</div>
+              <h3>Estabelecimento salvo</h3>
+              <p>{successModal.message}</p>
+              <button
+                className="btn btn-primary"
+                type="button"
+                onClick={() => setSuccessModal({ open: false, message: '' })}
+              >
+                OK
+              </button>
+            </div>
+          </div>
         )}
 
         <section className="insights-section">

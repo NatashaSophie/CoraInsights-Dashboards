@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { AuthenticatedNavigation } from '../components/Navigation/AuthenticatedNavigation';
 import { DashboardLayout } from '../components/Layout/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
-import './ProfilePage.css';
+import './PerfilPage.css';
 
 const API_URL = 'http://localhost:1337';
 
-export function ProfilePage() {
+export function PerfilPage() {
   const { user, updateUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
@@ -21,7 +20,7 @@ export function ProfilePage() {
     blocked: false
   });
   const [userRoles, setUserRoles] = useState(['pilgrim']);
-  const [showPasswordForm] = useState(true);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -35,18 +34,6 @@ export function ProfilePage() {
   const [isPolicyExpanded, setIsPolicyExpanded] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState('');
-  const [merchantEstablishments, setMerchantEstablishments] = useState([]);
-  const [merchantLoading, setMerchantLoading] = useState(false);
-  const [merchantError, setMerchantError] = useState('');
-  const [avatarPreview, setAvatarPreview] = useState('');
-  const [merchantApproval, setMerchantApproval] = useState(user?.merchantApproved ?? null);
-
-  const merchantList = (() => {
-    if (Array.isArray(user?.merchants)) return user.merchants;
-    if (Array.isArray(user?.commerces)) return user.commerces;
-    if (Array.isArray(user?.establishments)) return user.establishments;
-    return [];
-  })();
 
   const roleFromUserType = (userTypeValue) => {
     if (!userTypeValue) return 'pilgrim';
@@ -74,13 +61,6 @@ export function ProfilePage() {
   };
 
   const isMerchant = userRoles.includes('merchant');
-  const hasLinkedEstablishments = (merchantEstablishments.length || merchantList.length) > 0;
-  const isMerchantApproved = merchantApproval === true;
-  const isMerchantPending = !isMerchantApproved;
-  const merchantStatusLabel = merchantApproval === false
-    ? 'Rejeitado'
-    : 'Aguardando Aprovação';
-  const merchantStatusClass = merchantApproval === false ? 'rejected' : 'pending';
 
   useEffect(() => {
     if (!user) return;
@@ -107,8 +87,6 @@ export function ProfilePage() {
         sex: normalizeSex(profile.sex || prev.sex || ''),
         blocked: Boolean(profile.blocked)
       }));
-
-      setMerchantApproval(profile.merchantApproved ?? null);
 
       if (profile.blocked) {
         setPrivacyAccepted(false);
@@ -174,44 +152,7 @@ export function ProfilePage() {
     fetchProfile();
   }, [user]);
 
-  useEffect(() => {
-    if (!user) return;
-    const resolvedRole = roleFromUserType(user.userType);
-    if (resolvedRole !== 'merchant' && !userRoles.includes('merchant')) return;
-
-    const token = user?.jwt || localStorage.getItem('jwt');
-    if (!token) return;
-
-    const fetchEstablishments = async () => {
-      setMerchantLoading(true);
-      setMerchantError('');
-      try {
-        const response = await fetch(`${API_URL}/establishments?owner=${user.id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('Nao foi possivel carregar os comercios vinculados.');
-        }
-
-        const establishments = await response.json();
-        setMerchantEstablishments(Array.isArray(establishments) ? establishments : []);
-      } catch (error) {
-        setMerchantError(error.message || 'Erro ao carregar comercios vinculados.');
-      } finally {
-        setMerchantLoading(false);
-      }
-    };
-
-    fetchEstablishments();
-  }, [user, userRoles]);
-
   const handleEditToggle = () => {
-    if (isEditing) {
-      setAvatarPreview('');
-    }
     setIsEditing(!isEditing);
     setProfileStatus({ error: '', success: '' });
   };
@@ -228,6 +169,7 @@ export function ProfilePage() {
     if (event?.preventDefault) {
       event.preventDefault();
     }
+    setProfileStatus({ error: '', success: 'Clique detectado. Salvando...' });
     const token = user?.jwt || localStorage.getItem('jwt');
     const userId = user?.id || getTokenUserId(token);
 
@@ -239,18 +181,12 @@ export function ProfilePage() {
     setProfileSaving(true);
     setProfileStatus({ error: '', success: 'Salvando...' });
 
-    const currentRole = roleFromUserType(user?.userType);
-    const wantsMerchant = userRoles.includes('merchant') && currentRole !== 'merchant';
-    const wantsRevokeMerchant = !userRoles.includes('merchant') && currentRole === 'merchant';
-
     const payload = {
       name: editedData.name || null,
       nickname: editedData.nickname || null,
       email: editedData.email || null,
       birthdate: editedData.birthdate || null,
-      sex: editedData.sex || null,
-      requestMerchant: wantsMerchant,
-      revokeMerchant: wantsRevokeMerchant
+      sex: editedData.sex || null
     };
 
     try {
@@ -269,33 +205,13 @@ export function ProfilePage() {
       }
 
       const updated = await response.json();
-      const mapUserTypeToId = (userTypeValue) => {
-        if (typeof userTypeValue === 'number') return userTypeValue;
-        if (typeof userTypeValue === 'string') {
-          const typeMap = {
-            pilgrim: 1,
-            peregrino: 1,
-            manager: 2,
-            gestor: 2,
-            merchant: 3,
-            comerciante: 3
-          };
-          return typeMap[userTypeValue.toLowerCase()] || 1;
-        }
-        return 1;
-      };
-
       updateUser({
         name: updated.name,
         nickname: updated.nickname,
         email: updated.email,
         birthdate: updated.birthdate,
-        sex: updated.sex,
-        userType: mapUserTypeToId(updated.userType ?? user?.userType),
-        merchantApproved: updated.merchantApproved ?? merchantApproval
+        sex: updated.sex
       });
-
-      setMerchantApproval(updated.merchantApproved ?? merchantApproval);
 
       setProfileStatus({ error: '', success: 'Perfil atualizado com sucesso.' });
       setIsEditing(false);
@@ -308,19 +224,19 @@ export function ProfilePage() {
 
   const handleRoleToggle = (role) => {
     if (role === 'pilgrim' || role === 'manager') return;
-    if (role === 'merchant' && userRoles.includes('merchant') && hasLinkedEstablishments) {
-      return;
-    }
 
     setUserRoles(prev => {
       const exists = prev.includes(role);
       if (exists) {
-        setMerchantApproval(user?.merchantApproved ?? null);
         return prev.filter(item => item !== role);
       }
-      setMerchantApproval(null);
       return [...prev, role];
     });
+  };
+
+  const handlePasswordToggle = () => {
+    setShowPasswordForm(prev => !prev);
+    setPasswordStatus({ error: '', success: '' });
   };
 
   const handlePasswordChange = (event) => {
@@ -328,14 +244,7 @@ export function ProfilePage() {
     setPasswordData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleAvatarChange = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const previewUrl = URL.createObjectURL(file);
-    setAvatarPreview(previewUrl);
-  };
-
-  const handlePasswordSubmit = async (event) => {
+  const handlePasswordSubmit = (event) => {
     event.preventDefault();
     setPasswordStatus({ error: '', success: '' });
 
@@ -352,35 +261,12 @@ export function ProfilePage() {
       return;
     }
 
-    const token = user?.jwt || localStorage.getItem('jwt');
-    if (!token) {
-      setPasswordStatus({ error: 'Sessao expirada. Faça login novamente.', success: '' });
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_URL}/dashboards/auth/password`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          currentPassword: passwordData.currentPassword,
-          newPassword: passwordData.newPassword
-        })
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Nao foi possivel atualizar a senha.');
-      }
-
-      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      setPasswordStatus({ error: '', success: 'Senha atualizada com sucesso.' });
-    } catch (error) {
-      setPasswordStatus({ error: error.message || 'Erro ao atualizar senha.', success: '' });
-    }
+    // TODO: Validar senha atual no backend e salvar nova senha (PARA IMPLEMENTAÇÃO FUTURA)
+    // Campos envolvidos em Strapi: password (hash), resetPasswordToken e confirmationToken.
+    setPasswordStatus({
+      error: '',
+      success: 'Dados validados. Implementação da alteração de senha no backend pendente.'
+    });
   };
 
   const handlePrivacyToggle = (event) => {
@@ -513,7 +399,10 @@ export function ProfilePage() {
   return (
     <>
       <AuthenticatedNavigation />
-      <DashboardLayout>
+      <DashboardLayout 
+        title="👤 Meu Perfil"
+        subtitle="Gerencie suas informações pessoais"
+      >
       <div className="profile-container">
         {/* Seção de Informações Pessoais */}
         <section className="profile-section">
@@ -523,28 +412,13 @@ export function ProfilePage() {
               onClick={handleEditToggle}
               className={`btn ${isEditing ? 'btn-secondary' : 'btn-primary'}`}
             >
-              {isEditing ? 'Cancelar' : 'Editar'}
+              {isEditing ? '✕ Cancelar' : '✏️ Editar'}
             </button>
           </div>
 
           <div className="profile-card">
             <div className="profile-avatar">
-              {avatarPreview ? (
-                <img className="avatar-image" src={avatarPreview} alt="Foto do perfil" />
-              ) : (
-                <div className="avatar-placeholder">{avatarInitials}</div>
-              )}
-              {isEditing && (
-                <label className="avatar-upload">
-                  Alterar imagem
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="avatar-input"
-                    onChange={handleAvatarChange}
-                  />
-                </label>
-              )}
+              <div className="avatar-placeholder">{avatarInitials}</div>
             </div>
 
             <div className="profile-form">
@@ -559,6 +433,9 @@ export function ProfilePage() {
               )}
               {profileLoading && (
                 <p className="profile-message">Carregando dados do usuario...</p>
+              )}
+              {profileSaving && !profileStatus.success && (
+                <p className="profile-message">Salvando...</p>
               )}
               <div className="form-row">
                 <div className="form-group full-width">
@@ -651,7 +528,7 @@ export function ProfilePage() {
                         type="checkbox"
                         checked={userRoles.includes('merchant')}
                         onChange={() => handleRoleToggle('merchant')}
-                        disabled={!isEditing || userRoles.includes('manager') || (userRoles.includes('merchant') && hasLinkedEstablishments)}
+                        disabled={!isEditing || userRoles.includes('manager')}
                       />
                       <span>Comerciante</span>
                     </label>
@@ -678,7 +555,7 @@ export function ProfilePage() {
               {isEditing && (
                 <div className="form-actions">
                   <button type="button" onClick={handleSave} className="btn btn-primary" disabled={profileSaving}>
-                    {profileSaving ? 'Salvando...' : 'Salvar Alterações'}
+                    {profileSaving ? 'Salvando...' : '💾 Salvar Alterações'}
                   </button>
                 </div>
               )}
@@ -694,6 +571,11 @@ export function ProfilePage() {
               <div className="security-info">
                 <h3>Alterar Senha</h3>
                 <p>Altere sua senha de acesso com frequência para manter sua conta segura</p>
+                {!showPasswordForm && (
+                  <button className="btn btn-secondary" onClick={handlePasswordToggle}>
+                    Alterar Senha
+                  </button>
+                )}
               </div>
               {showPasswordForm && (
                 <form className="password-form" onSubmit={handlePasswordSubmit}>
@@ -742,19 +624,8 @@ export function ProfilePage() {
                     <button type="submit" className="btn btn-primary">
                       Salvar nova senha
                     </button>
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={() => {
-                        setPasswordData({
-                          currentPassword: '',
-                          newPassword: '',
-                          confirmPassword: ''
-                        });
-                        setPasswordStatus({ error: '', success: '' });
-                      }}
-                    >
-                      Cancelar
+                    <button type="button" className="btn btn-secondary" onClick={handlePasswordToggle}>
+                      Fechar
                     </button>
                   </div>
                 </form>
@@ -768,53 +639,44 @@ export function ProfilePage() {
           <section className="profile-section">
             <div className="section-header">
               <h2>Meus Comércios</h2>
-              {isMerchantApproved ? (
-                <Link className="btn btn-primary" to="/comerciante">
-                  Ver painel do comerciante
-                </Link>
-              ) : (
-                <span className={`badge ${merchantStatusClass}`}>{merchantStatusLabel}</span>
-              )}
+              <button className="btn btn-primary">+ Novo Comércio</button>
             </div>
-            {merchantLoading ? (
-              <p className="profile-message">Carregando comércios vinculados...</p>
-            ) : merchantError ? (
-              <p className="profile-message error">{merchantError}</p>
-            ) : (merchantEstablishments.length || merchantList.length) ? (
-              <div className="merchants-grid">
-                {(merchantEstablishments.length ? merchantEstablishments : merchantList).map((merchant, index) => {
-                  const name = merchant?.name || merchant?.title || merchant?.fantasyName || merchant?.tradeName;
-                  const type = merchant?.type || merchant?.category || merchant?.kind;
-                  const address = merchant?.address || merchant?.endereco || merchant?.location?.address || merchant?.location;
-                  const phone = merchant?.phone || merchant?.telephone || merchant?.phoneNumber;
-                  const hours = merchant?.hours || merchant?.schedule || merchant?.openingHours;
-                  const status = merchant?.status || merchant?.approvalStatus || merchant?.state;
-                  const approved = status && String(status).toLowerCase().includes('aprov');
-                  return (
-                    <div className="merchant-card" key={merchant?.id || name || index}>
-                      <div className="merchant-header">
-                        <h3>{name || 'Comércio cadastrado'}</h3>
-                        {status && (
-                          <span className={`badge ${approved ? 'approved' : 'pending'}`}>
-                            {status}
-                          </span>
-                        )}
-                      </div>
-                      <div className="merchant-details">
-                        {type && <p><strong>Tipo:</strong> {type}</p>}
-                        {address && <p><strong>Endereço:</strong> {address}</p>}
-                        {phone && <p><strong>Telefone:</strong> {phone}</p>}
-                        {hours && <p><strong>Horário:</strong> {hours}</p>}
-                      </div>
-                    </div>
-                  );
-                })}
+
+            <div className="merchants-grid">
+              <div className="merchant-card">
+                <div className="merchant-header">
+                  <h3>Restaurante Centro</h3>
+                  <span className="badge approved">Aprovado</span>
+                </div>
+                <div className="merchant-details">
+                  <p><strong>Tipo:</strong> Restaurante</p>
+                  <p><strong>Endereço:</strong> Rua Principal, 123</p>
+                  <p><strong>Telefone:</strong> (31) 3333-4444</p>
+                  <p><strong>Horário:</strong> 11h - 22h</p>
+                </div>
+                <div className="merchant-actions">
+                  <button className="btn btn-secondary">Editar</button>
+                  <button className="btn btn-secondary">Detalhes</button>
+                </div>
               </div>
-            ) : (
-              <p className="profile-message">
-                Nenhum comércio vinculado a sua conta. Acesse o painel do comerciante para gerenciar cadastros.
-              </p>
-            )}
+
+              <div className="merchant-card">
+                <div className="merchant-header">
+                  <h3>Café Vila</h3>
+                  <span className="badge approved">Aprovado</span>
+                </div>
+                <div className="merchant-details">
+                  <p><strong>Tipo:</strong> Café/Lanchonete</p>
+                  <p><strong>Endereço:</strong> Avenida Brasil, 456</p>
+                  <p><strong>Telefone:</strong> (31) 3333-5555</p>
+                  <p><strong>Horário:</strong> 7h - 19h</p>
+                </div>
+                <div className="merchant-actions">
+                  <button className="btn btn-secondary">Editar</button>
+                  <button className="btn btn-secondary">Detalhes</button>
+                </div>
+              </div>
+            </div>
           </section>
         )}
 

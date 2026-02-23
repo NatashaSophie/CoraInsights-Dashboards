@@ -50,7 +50,14 @@ function Login() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f5f0e8 0%, #faf7f2 50%, #efe8dc 100%)' }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #f4f6fb 0%, #fbfcff 50%, #eef1f9 100%)',
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+    >
       {/* Top Navigation Bar - White with shadow */}
       <nav style={{
         background: 'white',
@@ -62,7 +69,7 @@ function Login() {
         position: 'sticky',
         top: 0,
         zIndex: 1000,
-        marginBottom: '8px'
+        marginBottom: 0
       }}>
         <div style={{
           fontSize: '18px',
@@ -117,7 +124,10 @@ function Login() {
         color: 'white',
         padding: '24px 0',
         boxShadow: '0 4px 20px rgba(93, 64, 55, 0.3)',
-        marginBottom: '32px'
+        marginBottom: '32px',
+        position: 'sticky',
+        top: '64px',
+        zIndex: 900
       }}>
         <div style={{
           maxWidth: '1200px',
@@ -219,8 +229,11 @@ function Login() {
         </div>
         */}  
 
+        </div>
       </div>
-    </div>
+      <footer className="dashboard-footer">
+        <p>Caminho de Cora &#169; 2026 - Dashboards</p>
+      </footer>
     </div>
   );
 }
